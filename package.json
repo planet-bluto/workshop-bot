@@ -4,7 +4,8 @@
   "description": ">PLANET_BLUTO TypeScript Template",
   "main": "dist/main.js",
   "scripts": {
-    "start": "tsc && node dist/main.js",
+    "start": "node dist/main.js",
+    "build": "tsc",
     "dev": "nodemon --exec ts-node src/main.ts --ignore *.json"
   },
   "author": ">PLANET_BLUTO",
