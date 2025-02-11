@@ -5,6 +5,7 @@
   "main": "dist/main.js",
   "scripts": {
     "start": "node dist/main.js",
+    "alt_start": "ts-node src/main.ts",
     "build": "tsc",
     "dev": "nodemon --exec ts-node src/main.ts --ignore *.json"
   },
