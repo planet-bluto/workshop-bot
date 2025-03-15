@@ -19,6 +19,12 @@ const GO_LIVE_MESSAGES = [
   "GOING LIVE!!"
 ]
 
+client.on("ready", async () => {
+  let guild = await client.guilds.fetch(process.env.GUILD_ID)
+  let memberz = await guild.members.fetch()
+  print("We've cached: ", memberz.map(member => (member.nickname || member.displayName)))
+})
+
 client.on("presenceUpdate", async (oldPresence, newPresence) => {
   let guild = newPresence.guild
   let member = newPresence.member
