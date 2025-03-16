@@ -1,8 +1,8 @@
-const print = console.log
+// const print = console.log
 
 import { Client, Events, GatewayIntentBits } from 'discord.js'
 
-export const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildPresences] })
+export const client = new Client({ intents: Object.values(GatewayIntentBits).filter(entry => typeof(entry) == "number") }) // <= fuck you discord
 
 client.on(Events.ClientReady, readyClient => {
   console.log(`Logged in as ${readyClient.user.username}!`)
