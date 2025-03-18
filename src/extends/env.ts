@@ -1,22 +1,16 @@
 export interface IProcessEnv {
-  CHANNEL_ID: string;
-  BOT_CHANNEL_ID: string;
+  TOKEN: string;
+  USER_TOKEN: string;
 
   TWITCH_CLIENT_ID: string;
   TWITCH_CLIENT_SECRET: string;
+  TWITCH_ACCESS_TOKEN: string;
 
-  WEB_PORT: string;
-  OVERLAY_PORT: string;
-  OMNI_PORT: string;
+  GUILD_ID: string;
+  LIVE_CHANNEL_ID: string;
 
-  NOTION_SECRET: string;
-  NEKOWEB_KEY: string;
-
-  DB_HOST: string;
-  DB_TOKEN: string;
-
-  BLUBOT_HOST: string;
-  BLUBOT_TOKEN: string;
+  HOSTNAME: string;
+  SECRET: string;
 }
 
 declare global {

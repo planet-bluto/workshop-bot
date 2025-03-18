@@ -12,10 +12,16 @@
   "author": ">PLANET_BLUTO",
   "license": "MIT",
   "devDependencies": {
+    "@types/express": "^5.0.0",
     "typescript": "^5.5.3"
   },
   "dependencies": {
+    "@twurple/api": "^7.2.1",
+    "@twurple/eventsub-http": "^7.2.1",
     "discord.js": "^14.18.0",
-    "dotenv": "^16.4.7"
+    "discord.js-selfbot-v13": "^3.6.1",
+    "dotenv": "^16.4.7",
+    "eventemitter3": "^5.0.1",
+    "express": "^4.21.2"
   }
 }
