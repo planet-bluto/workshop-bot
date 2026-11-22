@@ -5,7 +5,8 @@ export interface IProcessEnv {
 
   TWITCH_CLIENT_ID: string;
   TWITCH_CLIENT_SECRET: string;
-  TWITCH_ACCESS_TOKEN: string;
+
+  RAILWAY_VOLUME_MOUNT_PATH: string;
 
   GUILD_ID: string;
   LIVE_CHANNEL_ID: string;

@@ -7,6 +7,7 @@ import { AppTokenAuthProvider } from '@twurple/auth';
 import { ApiClient, UserIdResolvable } from "@twurple/api";
 import { wait } from "./wait";
 import { EventSubMiddleware } from "@twurple/eventsub-http";
+// import { EventSubWsListener } from "@twurple/eventsub-ws";
 import { EventSubSubscription } from "@twurple/eventsub-base";
 import { app, ExpressEvents } from "./express";
 
@@ -16,8 +17,19 @@ const twitchListener = new EventSubMiddleware({
   apiClient,
   hostName: process.env["HOSTNAME"],
   pathPrefix: '/twitch',
-  secret: process.env["SECRET"]
-});
+  secret: process.env["SECRET"],
+})
+
+print("authProvider: ", authProvider)
+print("apiClient: ", apiClient)
+print("twitchListener: ", twitchListener)
+
+
+// twitchListener.onUserSocketConnect(console.log.bind(null, "twitchListener.onUserSocketConnect: "))
+// twitchListener.onSubscriptionCreateFailure(console.log.bind(null, "twitchListener.onSubscriptionCreateFailure: "))
+// twitchListener.onSubscriptionCreateSuccess(console.log.bind(null, "twitchListener.onSubscriptionCreateSuccess: "))
+
+// twitchListener.start()
 
 twitchListener.apply(app as any)
 ExpressEvents.on("middlewareSetup", () => {
@@ -139,47 +151,47 @@ async function listenForStream(userId: UserIdResolvable, timestamp: number) {
   }
   
   let onlineListener: null | EventSubSubscription = null
-  while (onlineListener == null) {
-    onlineListener = twitchListener.onStreamOnline(userId, async (event) => {
-      print(`verifying stream... ${userId}|${event.broadcasterName}`)
-      let guild = await client.guilds.fetch(process.env["GUILD_ID"])
-      let member = await guild.members.fetch(member_id)
-  
-      let stream = null
-      let firstTry = true
-      while (stream == null) {
-        if (firstTry) {
-          stream = await event.getStream()
-          firstTry = false
-        } else {
-          print("retrying to fetch stream...")
-          await wait(1000)
-          stream = await apiClient.streams.getStreamByUserId(userId)
-        }
+
+  onlineListener = twitchListener.onStreamOnline(userId, async (event) => {
+    print(`verifying stream... ${userId}|${event.broadcasterName}`)
+    let guild = await client.guilds.fetch(process.env["GUILD_ID"])
+    let member = await guild.members.fetch(member_id)
+
+    let stream = null
+    let firstTry = true
+    while (stream == null) {
+      if (firstTry) {
+        stream = await event.getStream()
+        firstTry = false
+      } else {
+        print("retrying to fetch stream...")
+        await wait(1000)
+        stream = await apiClient.streams.getStreamByUserId(userId)
       }
-  
-      sendStreamStartedMessage(member.id,
-        stream.userName,
-        stream.title,
-        stream.getThumbnailUrl(1820, 1024),
-        stream.gameName
-      )
-    })
-  }
+    }
+
+    sendStreamStartedMessage(member.id,
+      stream.userName,
+      stream.title,
+      stream.getThumbnailUrl(1820, 1024),
+      stream.gameName
+    )
+  })
+
 
   let offlineListener: null | EventSubSubscription = null
-  while (offlineListener == null) {
-    offlineListener = twitchListener.onStreamOffline(userId, async (event) => {
-      let member_id = DiscordTwitchConnections[userId as string]
 
-      print(`verifying offline... ${userId}|${event.broadcasterName}`)
-      if (CURRENT_STREAMERS.has(member_id)) {
-        console.log(`${event.broadcasterName} (<@${member_id}>) is no longer streaming...💥`)
+  offlineListener = twitchListener.onStreamOffline(userId, async (event) => {
+    let member_id = DiscordTwitchConnections[userId as string]
 
-        removeCurrentStreamer(member_id)
-      }
-    })
-  }
+    print(`verifying offline... ${userId}|${event.broadcasterName}`)
+    if (CURRENT_STREAMERS.has(member_id)) {
+      console.log(`${event.broadcasterName} (<@${member_id}>) is no longer streaming...💥`)
+
+      removeCurrentStreamer(member_id)
+    }
+  })
+
 
   print("Listening... ==> ", onlineListener, offlineListener)
 

@@ -3,6 +3,7 @@ import { CommandEntry } from "./interactions"
 import { DateTime, Duration } from "luxon"
 import { client } from "./client"
 import schedule from "node-schedule"
+import path from "path"
 
 const CMD_NAME = "timeblock_channel_setup"
 
@@ -47,7 +48,7 @@ type TimeblockRoleMapData = {
 }
 const fetchDB = async () => {
   const defaultData: TimeblockRoleMapData = {}
-  return JSONFilePreset('/db/timeblock_role_map.json', defaultData)
+  return JSONFilePreset(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'timeblock_role_map.json'), defaultData)
 }
 
 client.on(Events.InteractionCreate, async (raw_interaction) => {
