@@ -47,7 +47,7 @@ type TimeblockRoleMapData = {
 }
 const fetchDB = async () => {
   const defaultData: TimeblockRoleMapData = {}
-  return JSONFilePreset('./db/timeblock_role_map.json', defaultData)
+  return JSONFilePreset('/db/timeblock_role_map.json', defaultData)
 }
 
 client.on(Events.InteractionCreate, async (raw_interaction) => {
