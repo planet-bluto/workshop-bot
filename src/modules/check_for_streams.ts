@@ -4,7 +4,7 @@ import { client } from "./client"
 import { Client } from "discord.js-selfbot-v13"
 
 import { AppTokenAuthProvider } from '@twurple/auth';
-import { ApiClient, UserIdResolvable } from "@twurple/api";
+import { ApiClient, HelixStream, UserIdResolvable } from "@twurple/api";
 import { wait } from "./wait";
 import { EventSubMiddleware } from "@twurple/eventsub-http";
 // import { EventSubWsListener } from "@twurple/eventsub-ws";
@@ -44,13 +44,16 @@ const GO_LIVE_MESSAGES = [
   "THEY'RE LIVE!!",
   "STREAMING NOW!!",
   "NEW STREAM!!",
-  "LIVE ON TWITCH!!",
+  "LIVE ON %%PLATFORM%%!!",
   "WATCH NOW!!",
   "LIVE STREAM!!",
   "LIVE ON AIR!!",
   "TUNE IN!!",
   "GOING LIVE!!"
 ]
+
+const TWITCH_EMOJI = "<:twitch:1329250863692124160>"
+const YOUTUBE_EMOJI = "<:youtube:1397664187160854678>"
 
 type LISTENER_ENTRY = {id: string; listener: null | EventSubSubscription; timestamp: number; key: string}
 
@@ -135,12 +138,14 @@ async function listenForStream(userId: UserIdResolvable, timestamp: number) {
   if (listenerEntries.length == 0) {
     apiClient.streams.getStreamByUserId(userId).then(stream => {
       if (stream != null) {
-        sendStreamStartedMessage(member_id,
-          stream.userName,
-          stream.title,
-          stream.getThumbnailUrl(1820, 1024),
-          stream.gameName
-        )
+        sendStreamStartedMessage(member_id, {
+          header: stream.userName,
+          platform: "TWITCH",
+          url: `https://twitch.tv/${stream.userName}`,
+          desc: stream.title,
+          thumbnail: stream.getThumbnailUrl(1820, 1024),
+          footer: stream.gameName
+        })
       }
     })
   } else {
@@ -157,7 +162,7 @@ async function listenForStream(userId: UserIdResolvable, timestamp: number) {
     let guild = await client.guilds.fetch(process.env["GUILD_ID"])
     let member = await guild.members.fetch(member_id)
 
-    let stream = null
+    let stream: null | HelixStream = null
     let firstTry = true
     while (stream == null) {
       if (firstTry) {
@@ -170,12 +175,14 @@ async function listenForStream(userId: UserIdResolvable, timestamp: number) {
       }
     }
 
-    sendStreamStartedMessage(member.id,
-      stream.userName,
-      stream.title,
-      stream.getThumbnailUrl(1820, 1024),
-      stream.gameName
-    )
+    sendStreamStartedMessage(member.id, {
+      header: stream.userName,
+      platform: "TWITCH",
+      url: `https://twitch.tv/${stream.userName}`,
+      desc: stream.title,
+      thumbnail: stream.getThumbnailUrl(1820, 1024),
+      footer: stream.gameName,
+    })
   })
 
 
@@ -213,47 +220,108 @@ client.on("presenceUpdate", async (oldPresence, newPresence) => {
   
   if (guild.id != process.env.GUILD_ID) { return }
 
-  // print("Activities: ", newPresence.activities)
-
   let streamingActivity = (newPresence.activities || []).find(activity => activity.type == ActivityType.Streaming)
   
-  if (streamingActivity != null) {
-    // console.log(newPresence.activities)
+  if (streamingActivity == null) {
+    removeCurrentStreamer(member.id)
+    return
+  }
 
-    if (channel == null) {
-      channel = await client.channels.fetch(process.env.LIVE_CHANNEL_ID) as TextChannel
-    }
+  // print("streamingActivity: ", streamingActivity)
+  // console.log(newPresence.activities)
 
-    client.channels.fetch(process.env.LIVE_CHANNEL_ID).then((channel: TextChannel) => {
-      let twitchUsername = streamingActivity.url.split("/").pop()
+  channel = await client.channels.fetch(process.env.LIVE_CHANNEL_ID) as TextChannel
 
-      sendStreamStartedMessage(member.id,
-        twitchUsername,
-        streamingActivity.details,
-        streamingActivity.assets?.largeImageURL({ size: 1024 }),
-        streamingActivity.state
-      )
+  const isYouTube = streamingActivity.name == "YouTube" || (streamingActivity.url.startsWith("https://youtube.com/watch?v=") && !streamingActivity.url.includes("twitch.tv"))
+  let twitchUsername = streamingActivity.url.split("/").pop()
+
+  // sendStreamStartedMessage(member.id,
+  //   isYouTube ? streamingActivity.url : twitchUsername,
+  //   streamingActivity.details,
+  //   streamingActivity.assets?.largeImageURL({ size: 1024 }),
+  //   streamingActivity.state
+  // )
+
+  let youtubeChannelName: string | undefined = undefined
+  if (isYouTube) {
+    youtubeChannelName = await new Promise((res, rej) => {
+      const user_client = new Client()
+      user_client.login(process.env["USER_TOKEN"])
+
+      user_client.once("ready", async () => {
+        const user = await user_client.users.fetch(member.id)
+        const profile = await user.getProfile()
+        // print("profile.connected_accounts: ", profile.connected_accounts)
+        
+        const youtubes = profile.connected_accounts.filter(account => account.type == 'youtube')
+        const firstYouTubeAccount = youtubes[0]
+
+        // print("firstYouTubeAccount: ", firstYouTubeAccount)
+
+        user_client.destroy()
+
+        res(firstYouTubeAccount.name)
+      })
     })
   }
+
+  sendStreamStartedMessage(member.id, {
+    header: isYouTube ? (youtubeChannelName ?? member.user.username) : twitchUsername,
+    platform: isYouTube ? "YOUTUBE" : "TWITCH",
+    url: streamingActivity.url,
+    desc: streamingActivity.details,
+    thumbnail: streamingActivity.assets?.largeImageURL({ size: 1024 }),
+    footer: streamingActivity.state,
+  })
 })
 
-async function sendStreamStartedMessage(memberId, twitchUsername, streamDesc, thumbnailUrl, game) {
+interface StreamStartPayload {
+  header: string;
+  platform: string;
+  url: string;
+  desc: string;
+  thumbnail: string;
+  footer: string;
+}
+
+interface StreamingPlatform {
+  name: string;
+  emoji: string;
+  color: number;
+}
+
+const PLATFORMS: {[key: string]: StreamingPlatform} = {
+  TWITCH: {
+    name: "Twitch",
+    emoji: TWITCH_EMOJI,
+    color: 0x6441A4
+  },
+  YOUTUBE: {
+    name: "YouTube",
+    emoji: YOUTUBE_EMOJI,
+    color: 0xff0000
+  },
+}
+
+async function sendStreamStartedMessage(memberId: string, payload: StreamStartPayload) {
   if (!CURRENT_STREAMERS.has(memberId)) {
     addCurrentStreamer(memberId)
+
+    const platform = PLATFORMS[payload.platform]
     
-    console.log(`${twitchUsername} (<@${memberId}>) is now streaming!`)
+    console.log(`${payload.header} (<@${memberId}>) is now streaming!`)
     channel = (await client.channels.fetch(process.env["LIVE_CHANNEL_ID"]) as TextChannel)
-    return channel.send({content: `# 🔴 ${GO_LIVE_MESSAGES.random()}`, embeds: [
+    return channel.send({content: `# 🔴 ${(GO_LIVE_MESSAGES.random() as string).replace("%%PLATFORM%%", payload.platform)}`, embeds: [
       {
-        title: `<:twitch:1329250863692124160> __@${twitchUsername}__`,
-        description: `<@${memberId}>: ${streamDesc}`,
-        url: `https://twitch.tv/${twitchUsername}`,
+        title: `${platform.emoji} @${payload.header}`,
+        description: `<@${memberId}>: ${payload.desc}`,
+        url: payload.url,
         image: {
-          url: thumbnailUrl,
+          url: payload.thumbnail ?? "https://files.planet-bluto.net/placeholder.png",
         },
-        color: 0x6441A4,
+        color: platform.color,
         footer: {
-          text: game
+          text: payload.footer
         }
       }
     ]})
