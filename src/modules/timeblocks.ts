@@ -76,41 +76,58 @@ client.on(Events.InteractionCreate, async (raw_interaction) => {
   }
   
   const day = customIdBits[1]
+  const dayBits = day.split(".")
+
   const timeblock = customIdBits[2]
-  const timeblockId = `${customIdBits[1]}_${customIdBits[2]}`
-  const roleName = `${day} - ${timeblock} BLOCK`
+
+  const mode: "REMOVE" | "ADD" | "TOGGLE" = (dayBits[1] as "REMOVE" | "ADD" | undefined) ?? "TOGGLE"
 
   const db = await fetchDB()
   
   const guild = await client.guilds.fetch(process.env.GUILD_ID)
+
+
+  const days = dayBits[0] == "ALL" ? WEEKDAYS : [day]
+
+  let operationLog = []
+
+  await interaction.deferReply({flags: MessageFlags.Ephemeral})
+
+  for (const day of days) {
+    const timeblockId = `${day}_${timeblock}`
+    const roleName = `${day} - ${timeblock} BLOCK`
   
-  let pending_role: Role | null = db.data[timeblockId] ? await guild.roles.fetch(db.data[timeblockId]) : null
+    let pending_role: Role | null = db.data[timeblockId] ? await guild.roles.fetch(db.data[timeblockId]) : null
 
-  const createRole = async () => {
-    pending_role = await guild.roles.create({
-      name: roleName
-    })
+    const createRole = async () => {
+      pending_role = await guild.roles.create({
+        name: roleName
+      })
 
-    if (pending_role == null || pending_role == undefined) { return }
+      if (pending_role == null || pending_role == undefined) { return }
 
-    db.data[timeblockId] = pending_role.id
+      db.data[timeblockId] = pending_role.id
 
-    await db.write()
+      await db.write()
+    }
+    // Create role if map is missing
+    if (db.data[timeblockId] == undefined || pending_role == null) { await createRole() }
+
+    if (pending_role == null) {
+      await reply("Error, couldn't find or create timeblock role")
+      return
+    }
+
+    const member_refetched = await (interaction.member as GuildMember).fetch(true)
+    const hasRole = (member_refetched.roles as GuildMemberRoleManager).cache.has(pending_role.id)
+    const operation = (mode == "TOGGLE" ? (hasRole ? 'remove' : 'add') : mode.toLowerCase())
+    
+    await member_refetched.roles[operation](pending_role.id)
+
+    operationLog.push(`✅ **${hasRole ? `Removed ${roleName} role` : `Added ${roleName} role`}**`)
   }
-  // Create role if map is missing
-  if (db.data[timeblockId] == undefined || pending_role == null) { await createRole() }
 
-  if (pending_role == null) {
-    await reply("Error, couldn't find or create timeblock role")
-    return
-  }
-
-  const member_refetched = await (interaction.member as GuildMember).fetch(true)
-  const hasRole = (member_refetched.roles as GuildMemberRoleManager).cache.has(pending_role.id)
-  
-  await member_refetched.roles[hasRole ? 'remove' : 'add'](pending_role.id)
-
-  await reply(`✅ **${hasRole ? `Removed ${roleName} role` : `Added ${roleName} role`}**`)
+  await reply(operationLog.join("\n"))
 })
 
 export default [
@@ -138,11 +155,11 @@ export default [
       await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
       for (const timeblock of TIMEBLOCKS) {
-        const dayButtonFunction = (day: string): any => ({
+        const dayButtonFunction = (day: string, label: string = day): any => ({
           type: ComponentType.Button,
           custom_id: "TIMEBLOCK_" + day + "_" + timeblock,
-          style: ButtonStyle.Primary,
-          label: day
+          style: day.startsWith("ALL.") ? day.endsWith("ADD") ? ButtonStyle.Success : ButtonStyle.Danger : ButtonStyle.Primary,
+          label: label
         })
         print("timeblock: ", timeblock)
 
@@ -154,11 +171,11 @@ export default [
           components: [
             {
               type: ComponentType.ActionRow,
-              components: WEEKDAYS.slice(0, 5).map(dayButtonFunction)
+              components: WEEKDAYS.slice(0, 5).map(day => dayButtonFunction(day))
             },
             {
               type: ComponentType.ActionRow,
-              components: WEEKDAYS.slice(5).map(dayButtonFunction)
+              components: [...WEEKDAYS.slice(5).map(day => ([day])), ["ALL.ADD", "+ ALL"], ["ALL.REMOVE", "- ALL"]].map((args: [string, string?]) => dayButtonFunction(...args))
             }
           ]
         })
@@ -169,9 +186,9 @@ export default [
   ]
 ] as CommandEntry
 
-// client.on(Events.MessageCreate, async (msg) => {
-//   if (msg.content.startsWith("!pingchecktest")) { hourlyPingCheck() }
-// })
+client.on(Events.MessageCreate, async (msg) => {
+  if (msg.author.id == "334039742205132800" && msg.content.startsWith("!pingchecktest")) { hourlyPingCheck() }
+})
 
 const modulo = (n, d) => ((n % d) + d) % d
 
@@ -230,6 +247,8 @@ async function hourlyPingCheck() {
   
   const currentValid = (pending_role?.members?.size ?? 0) > 0
   const prevValid = (prev_pending_role?.members?.size ?? 0) > 0
+
+  if (!prevValid && !currentValid) { print(`Would fire ping for ${timeblockId}, but roles are empty or non-existent`); return }
 
   const lines = [
     `# :briefcase:  <@&${pending_roleId}> START!`,
