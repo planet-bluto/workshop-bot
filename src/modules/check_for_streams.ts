@@ -7,6 +7,7 @@ import { AppTokenAuthProvider } from '@twurple/auth';
 import { ApiClient, UserIdResolvable } from "@twurple/api";
 import { wait } from "./wait";
 import { EventSubMiddleware } from "@twurple/eventsub-http";
+import { EventSubSubscription } from "@twurple/eventsub-base";
 import { app, ExpressEvents } from "./express";
 
 const authProvider = new AppTokenAuthProvider(process.env["TWITCH_CLIENT_ID"], process.env["TWITCH_CLIENT_SECRET"]);
@@ -39,8 +40,10 @@ const GO_LIVE_MESSAGES = [
   "GOING LIVE!!"
 ]
 
-let LISTENERS: any = {}
-let DiscordTwitchConnections: any = {}
+type LISTENER_ENTRY = {id: string; listener: null | EventSubSubscription; timestamp: number; key: string}
+
+let LISTENERS: {[key: string]: LISTENER_ENTRY} = {}
+let DiscordTwitchConnections: {[twitch_user_id: string]: string} = {}
 async function setupStreamListeners(timestamp = Date.now()) {
   print("Starting...")
   return new Promise<void>((res, rej) => {
@@ -71,9 +74,9 @@ async function setupStreamListeners(timestamp = Date.now()) {
 
       // print("Connections: ", twitchConnections)
 
-      let listenerEntries: any[] = Object.values(LISTENERS)
+      let listenerEntries: LISTENER_ENTRY[] = Object.values(LISTENERS)
       listenerEntries.filter(entry => entry.timestamp != timestamp).forEach(entry => {
-        twitchListener.removeListener(entry.listener)
+        twitchListener.removeListener()
         delete LISTENERS[entry.key]
       })
       // print("Listener: ", LISTENERS)
@@ -90,6 +93,24 @@ async function setupStreamListeners(timestamp = Date.now()) {
 }
 
 const CURRENT_STREAMERS = new Set<string>()
+async function addCurrentStreamer(member_id: string) {
+  CURRENT_STREAMERS.add(member_id)
+
+  const guild = await client.guilds.fetch(process.env.GUILD_ID)
+  await guild.members.addRole({
+    user: member_id,
+    role: process.env.LIVE_ROLE_ID
+  })
+}
+async function removeCurrentStreamer(member_id: string) {
+  CURRENT_STREAMERS.delete(member_id)
+  
+  const guild = await client.guilds.fetch(process.env.GUILD_ID)
+  await guild.members.removeRole({
+    user: member_id,
+    role: process.env.LIVE_ROLE_ID
+  })
+}
 const LISTENING_STREAMS = new Set<string>()
 
 async function listenForStream(userId: UserIdResolvable, timestamp: number) {
@@ -117,7 +138,7 @@ async function listenForStream(userId: UserIdResolvable, timestamp: number) {
     })
   }
   
-  let onlineListener = null
+  let onlineListener: null | EventSubSubscription = null
   while (onlineListener == null) {
     onlineListener = twitchListener.onStreamOnline(userId, async (event) => {
       print(`verifying stream... ${userId}|${event.broadcasterName}`)
@@ -146,7 +167,7 @@ async function listenForStream(userId: UserIdResolvable, timestamp: number) {
     })
   }
 
-  let offlineListener = null
+  let offlineListener: null | EventSubSubscription = null
   while (offlineListener == null) {
     offlineListener = twitchListener.onStreamOffline(userId, async (event) => {
       let member_id = DiscordTwitchConnections[userId as string]
@@ -155,15 +176,15 @@ async function listenForStream(userId: UserIdResolvable, timestamp: number) {
       if (CURRENT_STREAMERS.has(member_id)) {
         console.log(`${event.broadcasterName} (<@${member_id}>) is no longer streaming...💥`)
 
-        CURRENT_STREAMERS.delete(member_id)
+        removeCurrentStreamer(member_id)
       }
     })
   }
 
-  // print("Listening... ==> ", onlineListener, offlineListener)
+  print("Listening... ==> ", onlineListener, offlineListener)
 
-  LISTENERS[`${userId}_online_${timestamp}`] = {id: userId, lisetner: onlineListener, timestamp, key: `${userId}_online_${timestamp}`}
-  LISTENERS[`${userId}_offline_${timestamp}`] = {id: userId, lisetner: offlineListener, timestamp, key: `${userId}_offline_${timestamp}`}
+  LISTENERS[`${userId}_online_${timestamp}`] = {id: (userId as string), listener: onlineListener, timestamp, key: `${userId}_online_${timestamp}`}
+  LISTENERS[`${userId}_offline_${timestamp}`] = {id: (userId as string), listener: offlineListener, timestamp, key: `${userId}_offline_${timestamp}`}
 }
 
 client.on("ready", async () => {
@@ -206,7 +227,7 @@ client.on("presenceUpdate", async (oldPresence, newPresence) => {
 
 async function sendStreamStartedMessage(memberId, twitchUsername, streamDesc, thumbnailUrl, game) {
   if (!CURRENT_STREAMERS.has(memberId)) {
-    CURRENT_STREAMERS.add(memberId)
+    addCurrentStreamer(memberId)
     
     console.log(`${twitchUsername} (<@${memberId}>) is now streaming!`)
     channel = (await client.channels.fetch(process.env["LIVE_CHANNEL_ID"]) as TextChannel)
