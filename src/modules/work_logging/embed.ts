@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'path';
 
-import { createCanvas, Image, loadImage } from "@napi-rs/canvas";
+import { createCanvas, Image, loadImage, GlobalFonts } from "@napi-rs/canvas";
 import { colord, extend } from "colord";
 import mixPlugin from "colord/plugins/mix";
 extend([mixPlugin]);
@@ -32,6 +32,7 @@ export const HEIGHT = Math.ceil((ROW_COUNT * CELL_SIZE) + (PADDING * 2) + (GAP *
 
 // client.on("messageCreate", (msg) => {if (msg.content == "!gridtest") { generateGrid() }})
 
+GlobalFonts.registerFromPath(path.join(process.env.CANVAS_DIR, 'fonts', 'NunitoSans.ttf'), 'NunitoSans')
 
 
 export async function generateGrid(heatmapData: {startDay: number; data: number[]}): Promise<{width: number; height: number; buffer: Buffer} | undefined> {
@@ -55,7 +56,7 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
 
   let cellImg: Image
   try {
-    cellImg = await loadImage(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'img', 'cell.png'))
+    cellImg = await loadImage(path.join(process.env.CANVAS_DIR, 'img', 'cell.png'))
   } catch(err) {
     print("oops: ", err)
     return undefined
@@ -114,7 +115,7 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
     ctx.fillStyle = "#ffffff33"
     ctx.textAlign = "left"
     ctx.textBaseline = "top"
-    ctx.font = "700 32px sans";
+    ctx.font = "700 32px NunitoSans";
     ctx.fillText(
         `${weekday[0]}${weekday[1].toLowerCase()}`,
         PADDING,
@@ -133,7 +134,7 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
     const dt = DateTime.fromMillis(timestampFromSuperOrdinal(firstVisibleOrdinal + i))
 
     if (dt.daysInMonth == dt.day) {
-      ctx.font = "1000 24px sans";
+      ctx.font = "1000 24px NunitoSans";
       ctx.textAlign = "center"
       ctx.fillText(
           `${dt.monthShort.toUpperCase()}`,

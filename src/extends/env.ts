@@ -4,9 +4,10 @@ export interface IProcessEnv {
   USER_TOKEN: string;
 
   TWITCH_CLIENT_ID: string;
-  
   TWITCH_CLIENT_SECRET: string;
+  
   RAILWAY_VOLUME_MOUNT_PATH: string;
+  CANVAS_DIR: string;
 
   GUILD_ID: string;
   LIVE_CHANNEL_ID: string;
