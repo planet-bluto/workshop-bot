@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'path';
 
-import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { createCanvas, Image, loadImage } from "@napi-rs/canvas";
 import { colord, extend } from "colord";
 import mixPlugin from "colord/plugins/mix";
 extend([mixPlugin]);
@@ -53,7 +53,13 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
 
   ctx.fillStyle = "#024aca"
 
-  const cellImg = await loadImage(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'img', 'cell.png'))
+  let cellImg: Image
+  try {
+    cellImg = await loadImage(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'img', 'cell.png'))
+  } catch(err) {
+    print("oops: ", err)
+    return
+  }
 
   for (let x = 0; x < COL_COUNT; x++) {
     for (let y = 0; y < ROW_COUNT; y++) {
