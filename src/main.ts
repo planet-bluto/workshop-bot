@@ -6,6 +6,7 @@ import "./extends/env"
 
 import "./lib/arrayLib.js"
 
+import "./modules/volume_setup"
 import "./modules/express"
 import "./modules/client"
 import "./modules/check_for_streams"
