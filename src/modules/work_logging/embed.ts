@@ -34,7 +34,7 @@ export const HEIGHT = Math.ceil((ROW_COUNT * CELL_SIZE) + (PADDING * 2) + (GAP *
 
 
 
-export async function generateGrid(heatmapData: {startDay: number; data: number[]}) {
+export async function generateGrid(heatmapData: {startDay: number; data: number[]}): Promise<{width: number; height: number; buffer: Buffer} | undefined> {
   print("heatmapData: ", heatmapData)
   // print("WIDTH: ", WIDTH)
   // print("HEIGHT: ", HEIGHT)
@@ -58,7 +58,7 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
     cellImg = await loadImage(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'img', 'cell.png'))
   } catch(err) {
     print("oops: ", err)
-    return
+    return undefined
   }
 
   for (let x = 0; x < COL_COUNT; x++) {
@@ -153,4 +153,4 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
 generateGrid({
   startDay: 3,
   data: [0.1, 0.25, 0.5, 1.0]
-}).then(grid => fs.writeFile("out.png", grid.buffer, () => {}))
+}).then(grid => {if (grid) {fs.writeFile("out.png", grid.buffer, () => {})}})
