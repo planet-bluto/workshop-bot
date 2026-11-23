@@ -12,4 +12,10 @@ import "./modules/check_for_streams"
 import "./modules/reply_thread_channels"
 import "./modules/announcement_drafter"
 import "./modules/interactions"
+
+import "./modules/timeblocks/ping_check"
+import "./modules/timeblocks/button_interactions"
+
+import "./modules/work_logging/main"
+import "./modules/work_logging/embed"
 // import "./modules/fireboard"

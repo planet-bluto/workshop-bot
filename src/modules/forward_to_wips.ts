@@ -6,6 +6,7 @@ const CMD_NAME = 'Forward to WIPs Channel'
 
 let USER_FORWARD_TIMES = new Map<string, number>()
 
+// Reminder to thread OP...
 client.on("threadCreate", async (thread, newlyCreated) => {
   print("newlyCreated (idk what this means): ", newlyCreated)
   if (!newlyCreated) { return }

@@ -4,8 +4,8 @@ export interface IProcessEnv {
   USER_TOKEN: string;
 
   TWITCH_CLIENT_ID: string;
+  
   TWITCH_CLIENT_SECRET: string;
-
   RAILWAY_VOLUME_MOUNT_PATH: string;
 
   GUILD_ID: string;
@@ -18,7 +18,9 @@ export interface IProcessEnv {
   WIPS_CHANNEL_ID: string;
   PROJECTS_CHANNEL_ID: string;
   COWORKING_VOICE_ID: string;
+  COWORKING_VOICE_CHANNELS: string;
   SHOWCASE_CHANNEL_ID: string;
+  ANNOUNECMENT_DRAFT_CHANNEL_ID: string;
 
   HOSTNAME: string;
   PORT: string;
