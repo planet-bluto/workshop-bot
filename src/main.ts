@@ -6,6 +6,7 @@ import "./extends/env"
 
 import "./lib/arrayLib.js"
 
+import "./modules/timecheck"
 import "./modules/volume_setup"
 import "./modules/express"
 import "./modules/client"
@@ -20,3 +21,5 @@ import "./modules/timeblocks/button_interactions"
 import "./modules/work_logging/main"
 import "./modules/work_logging/embed"
 // import "./modules/fireboard"
+
+print()
