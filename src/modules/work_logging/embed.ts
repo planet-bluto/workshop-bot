@@ -9,9 +9,9 @@ import { DateTime } from 'luxon';
 
 // import { client } from "../client";
 import { WEEKDAYS } from '../timeblocks/base';
-import { calcSuperOrdinal, timestampFromSuperOrdinal } from './calc';
+import { calcSuperOrdinal, calcMyWeekDay, timestampFromSuperOrdinal } from './calc';
 import { modulo } from '../../lib/modulo';
-export const calcMyWeekDay = (timestamp: number) => modulo((modulo(DateTime.fromMillis(timestamp).weekday, 7) - 1), 7);
+// export const calcMyWeekDay = (timestamp: number) => modulo((modulo(DateTime.fromMillis(timestamp).weekday, 7) - 1), 7);
 
 export const WIDTH = 800
 
@@ -48,6 +48,10 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
   dataToMap.splice(CELL_COUNT - usableData.length - (6 - calcMyWeekDay(heatmapData.startDay)), usableData.length, ...usableData)
 
   print("dataToMap: ", dataToMap)
+  
+  const firstVisibleOrdinal = calcSuperOrdinal(heatmapData.startDay) + (6 - calcMyWeekDay(heatmapData.startDay)) - CELL_COUNT
+  print("firstVisibleOrdinal: ", firstVisibleOrdinal)
+  const dtFromIdx = i => DateTime.fromMillis(timestampFromSuperOrdinal(firstVisibleOrdinal + i))
 
   const canvas = createCanvas(WIDTH, HEIGHT)
   const ctx = canvas.getContext('2d')
@@ -87,7 +91,13 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
       // var mult = i / (COL_COUNT * ROW_COUNT)
       // print(`(${x}, ${y}): ${i} (${mult})`)
 
-      ctx.fillStyle = colord("#282828").mix(colord("#2765ff"), dataToMap[i], "rgb").toHex()
+      // const dt = dtFromIdx(i)
+      const idxSuperOrd = firstVisibleOrdinal + i
+      const nowSuperOrd = calcSuperOrdinal(DateTime.now().toMillis())
+
+      print(`${idxSuperOrd} > ${nowSuperOrd}`)
+
+      ctx.fillStyle = (idxSuperOrd + 1) > nowSuperOrd ? "#00000000" : colord("#282828").mix(colord("#2765ff"), dataToMap[i], "rgb").toHex()
       ctx.fillRect(
         LEFT_SIDE + PADDING + (x * GAP) + (x * CELL_SIZE),
         TOP_SIDE + PADDING + (y * GAP) + (y * CELL_SIZE),
@@ -123,17 +133,14 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
     )
   }
 
-
-  const firstVisibleOrdinal = calcSuperOrdinal(heatmapData.startDay) + (6 - calcMyWeekDay(heatmapData.startDay)) - CELL_COUNT
-
   for (let i = CELL_COUNT - 1; i > -1; i--) {
     print("i: ", i)
     const x = Math.floor(i / ROW_COUNT)
     // const y = i - (Math.floor(i / ROW_COUNT) * ROW_COUNT)
 
-    const dt = DateTime.fromMillis(timestampFromSuperOrdinal(firstVisibleOrdinal + i))
+    const dt = dtFromIdx(i)
 
-    if (dt.daysInMonth == dt.day) {
+    if (dt.day == 1) {
       ctx.font = "1000 24px NunitoSans";
       ctx.textAlign = "center"
       ctx.fillText(
@@ -152,6 +159,6 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
 }
 
 generateGrid({
-  startDay: 3,
+  startDay: DateTime.now().startOf('day').toMillis(),
   data: [0.1, 0.25, 0.5, 1.0]
 }).then(grid => {if (grid) {fs.writeFile("out.png", grid.buffer, () => {})}})

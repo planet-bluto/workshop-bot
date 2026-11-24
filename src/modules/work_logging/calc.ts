@@ -2,7 +2,7 @@ import { Low } from "lowdb/lib";
 import { fetchDB, WorkLogData } from "./db";
 import { DateTime, Duration } from "luxon";
 import { modulo } from "../../lib/modulo";
-import { CELL_COUNT } from "./embed";
+// import { CELL_COUNT } from "./embed";
 
 const HOUR = 3600000
 const MIN = 60000
@@ -79,7 +79,7 @@ export const calcSuperOrdinal = (timestamp: number) => Math.round(DateTime.fromM
 export const timestampFromSuperOrdinal = (superOrdinal: string | number) => DateTime.fromMillis(0).startOf('day').plus(Duration.fromObject({days: Number(superOrdinal)})).toMillis();
 export const calcStartOfDay = (timestamp: number) => DateTime.fromMillis(timestamp).startOf('day').toMillis();
 export const calcEndOfDay = (timestamp: number) => DateTime.fromMillis(timestamp).endOf('day').toMillis();
-// export const calcMyWeekDay = (timestamp: number) => modulo((modulo(DateTime.fromMillis(timestamp).weekday, 7) - 1), 7);
+export const calcMyWeekDay = (timestamp: number) => modulo((modulo(DateTime.fromMillis(timestamp).weekday, 7) - 1), 7);
 
 export async function getHeatMapData(member_id: string): Promise<{startDay: number; data: number[]}> {
   const dayMap = await getDayMap(member_id)
@@ -98,7 +98,8 @@ export async function getHeatMapData(member_id: string): Promise<{startDay: numb
 export async function getDayMap(member_id: string): Promise<{[superOrdinal: string]: number}> {
   const db = await fetchDB()
 
-  const startTimestamp = DateTime.now().minus(Duration.fromObject({days: CELL_COUNT})).startOf('day').toMillis()
+  // const startTimestamp = DateTime.now().minus(Duration.fromObject({days: CELL_COUNT})).startOf('day').toMillis()
+  const startTimestamp = 0.0
   const endTimestamp = Date.now()
 
   const entries = (db.data[member_id] ?? [])
