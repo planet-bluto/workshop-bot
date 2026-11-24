@@ -10,7 +10,7 @@ export default class TaskManager {
   // running: boolean;
   sync: boolean;
 
-	constructor(running = true, sync = true) {
+	constructor(running = true, sync = false) {
 		// this._running = running
 		this.running = running
 		this.sync = sync

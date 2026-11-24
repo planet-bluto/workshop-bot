@@ -4,7 +4,7 @@ import { DateTime, Duration } from "luxon";
 
 import { client } from "../client"
 import { TIMEBLOCKS, TIMEBLOCK_HOUR_LENGTH, UTC_START_HOUR, WEEKDAYS } from "./base";
-import { fetchDB } from "./db";
+import { TimeblockRoleMapDB } from "./db";
 import { modulo } from "../../lib/modulo";
 
 const rule = new schedule.RecurrenceRule();
@@ -54,7 +54,7 @@ async function hourlyPingCheck() {
   print("timeblockId: ", timeblockId)
   print("prev_timeblockId: ", prev_timeblockId)
 
-  const db = await fetchDB()
+  const db = await TimeblockRoleMapDB()
 
   const pending_roleId = db.data[timeblockId]
   const prev_pending_roleId = db.data[prev_timeblockId]

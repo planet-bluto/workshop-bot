@@ -47,10 +47,10 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
   
   dataToMap.splice(CELL_COUNT - usableData.length - (6 - calcMyWeekDay(heatmapData.startDay)), usableData.length, ...usableData)
 
-  print("dataToMap: ", dataToMap)
+  // print("dataToMap: ", dataToMap)
   
   const firstVisibleOrdinal = calcSuperOrdinal(heatmapData.startDay) + (6 - calcMyWeekDay(heatmapData.startDay)) - CELL_COUNT
-  print("firstVisibleOrdinal: ", firstVisibleOrdinal)
+  // print("firstVisibleOrdinal: ", firstVisibleOrdinal)
   const dtFromIdx = i => DateTime.fromMillis(timestampFromSuperOrdinal(firstVisibleOrdinal + i))
 
   const canvas = createCanvas(WIDTH, HEIGHT)
@@ -83,7 +83,7 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
   
   // ctx.globalCompositeOperation ='source-in'
   
-  print("(COL_COUNT * ROW_COUNT): ", (COL_COUNT * ROW_COUNT))
+  // print("(COL_COUNT * ROW_COUNT): ", (COL_COUNT * ROW_COUNT))
 
   for (let y = 0; y < ROW_COUNT; y++) {
     for (let x = 0; x < COL_COUNT; x++) {
@@ -95,7 +95,7 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
       const idxSuperOrd = firstVisibleOrdinal + i
       const nowSuperOrd = calcSuperOrdinal(DateTime.now().toMillis())
 
-      print(`${idxSuperOrd} > ${nowSuperOrd}`)
+      // print(`${idxSuperOrd} > ${nowSuperOrd}`)
 
       ctx.fillStyle = (idxSuperOrd + 1) > nowSuperOrd ? "#00000000" : colord("#282828").mix(colord("#2765ff"), dataToMap[i], "rgb").toHex()
       ctx.fillRect(
@@ -134,7 +134,7 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
   }
 
   for (let i = CELL_COUNT - 1; i > -1; i--) {
-    print("i: ", i)
+    // print("i: ", i)
     const x = Math.floor(i / ROW_COUNT)
     // const y = i - (Math.floor(i / ROW_COUNT) * ROW_COUNT)
 

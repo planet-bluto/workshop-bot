@@ -1,7 +1,8 @@
 import { AttachmentBuilder, ChatInputCommandInteraction, EmbedType, MessageFlags, SlashCommandBuilder, SlashCommandMentionableOption, SlashCommandUserOption } from "discord.js"
+// import { colord } from "colord"
+
 import { CommandEntry } from "../interactions"
 import { getHeatMapData, getWorkTime } from "./calc"
-import { colord } from "colord"
 import { generateGrid } from "./embed"
 
 
@@ -59,7 +60,7 @@ export const WorkLogCommand: CommandEntry = [
                 {
                     "inline": true,
                     "name": "Earnings",
-                    "value": `\`\`${WorkTime.usd_formatted}\`\``
+                    "value": `\`\`${WorkTime.in_hours}\`\``
                 }
             ],
             "image": {

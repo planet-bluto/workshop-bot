@@ -15,6 +15,8 @@ import "./modules/reply_thread_channels"
 import "./modules/announcement_drafter"
 import "./modules/interactions"
 
+import "./modules/levels/upkeep"
+
 import "./modules/timeblocks/ping_check"
 import "./modules/timeblocks/button_interactions"
 

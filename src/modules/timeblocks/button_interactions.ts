@@ -1,7 +1,7 @@
 import { ButtonInteraction, Events, GuildMember, GuildMemberRoleManager, MessageFlags, Role } from "discord.js"
 
 import { client } from "../client"
-import { fetchDB } from "./db"
+import { TimeblockRoleMapDB } from "./db"
 import { TIMEBLOCKS, WEEKDAYS } from "./base"
 
 client.on(Events.InteractionCreate, async (raw_interaction) => {
@@ -40,7 +40,7 @@ client.on(Events.InteractionCreate, async (raw_interaction) => {
 
   const mode: "REMOVE" | "ADD" | "TOGGLE" = (dayBits[1] as "REMOVE" | "ADD" | undefined) ?? "TOGGLE"
 
-  const db = await fetchDB()
+  const db = await TimeblockRoleMapDB()
   
   const guild = await client.guilds.fetch(process.env.GUILD_ID)
 

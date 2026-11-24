@@ -8,7 +8,7 @@ import { JSONFilePreset } from 'lowdb/node'
 //   clock_in?: boolean;
 // }
 
-export type WorkLogEntry = TimePunchEntry | PromotionEntry
+export type WorkLogEntry = TimePunchEntry
 
 export interface TimePunchEntry {
   type: "time_punch";
@@ -16,16 +16,16 @@ export interface TimePunchEntry {
   clock_in: boolean;
 }
 
-export interface PromotionEntry {
-  type: "promotion";
-  timestamp: number;
-}
+// export interface PromotionEntry {
+//   type: "promotion";
+//   timestamp: number;
+// }
 
 export type WorkLogData = {
   [member_id: string]: WorkLogEntry[]
 }
 
-export const fetchDB = async () => {
+export const WorklogDB = async () => {
   const defaultData: WorkLogData = {}
   return JSONFilePreset(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'db', 'worklog.json'), defaultData)
 }

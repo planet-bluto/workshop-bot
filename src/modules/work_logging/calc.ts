@@ -1,5 +1,5 @@
 import { Low } from "lowdb/lib";
-import { fetchDB, WorkLogData } from "./db";
+import { WorklogDB, WorkLogData } from "./db";
 import { DateTime, Duration } from "luxon";
 import { modulo } from "../../lib/modulo";
 // import { CELL_COUNT } from "./embed";
@@ -9,49 +9,46 @@ const MIN = 60000
 const SEC = 1000
 
 const BASE_WAGE = 7.25
-const PROMOTION_RATE = 2.25
 
 export interface WorkTimeOutput {
   in_ms: number;
   in_hours: number;
   clock: string;
   fancy: string;
-  usd: number;
-  usd_formatted: string;
+  // usd: number;
+  // usd_formatted: string;
 }
 
 export async function getWorkTime(member_id: string, startTimestamp: number = 0.0, endTimestamp: number = Infinity): Promise<WorkTimeOutput> {
-  const db = await fetchDB()
+  const db = await WorklogDB()
+  return getWorkTimeSync(db, member_id, startTimestamp, endTimestamp)
+}
 
-  let promotion_level = getPromotionLevelSync(db, member_id, startTimestamp)
+export function getWorkTimeSync(db: Low<WorkLogData>, member_id: string, startTimestamp: number = 0.0, endTimestamp: number = Infinity): WorkTimeOutput {
+  const worklog_db = db
 
-  const entries = (db.data[member_id] ?? []).sort((entryA, entryB) => entryA.timestamp - entryB.timestamp).filter(entry => entry.timestamp >= startTimestamp && entry.timestamp <= endTimestamp)
+  // let promotion_level = getPromotionLevelSync(worklog_db, member_id, startTimestamp)
+
+  const entries = (worklog_db.data[member_id] ?? []).sort((entryA, entryB) => entryA.timestamp - entryB.timestamp).filter(entry => entry.timestamp >= startTimestamp && entry.timestamp <= endTimestamp)
 
   print("entries: ", entries)
 
   let totalTimeMS = 0.0
   let totalUSD = 0.0
-  let currentWage = BASE_WAGE + (promotion_level * PROMOTION_RATE)
+  // let currentWage = BASE_WAGE + (promotion_level * PROMOTION_RATE)
 
   const addTime = (ms: number) => {
     totalTimeMS += ms
-    totalUSD += (ms / HOUR) * currentWage
+    // totalUSD += (ms / HOUR) * currentWage
   }
 
   let lastClockInTime = null
   for (const entry of entries) {
-    switch (entry.type) {
-      case 'time_punch':
-        if (entry.clock_in) {
-          lastClockInTime = entry.timestamp
-        } else if (lastClockInTime != null) {
-          addTime(entry.timestamp - lastClockInTime)
-          lastClockInTime = null
-        }
-      break;
-      case 'promotion':
-        currentWage += PROMOTION_RATE
-      break;
+    if (entry.clock_in) {
+      lastClockInTime = entry.timestamp
+    } else if (lastClockInTime != null) {
+      addTime(entry.timestamp - lastClockInTime)
+      lastClockInTime = null
     }
   }
 
@@ -70,9 +67,28 @@ export async function getWorkTime(member_id: string, startTimestamp: number = 0.
     in_hours: (totalTimeMS / HOUR),
     clock: `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(ms).padStart(3, '0')}`,
     fancy: `${String(hours)}h ${String(mins)}m ${String(secs)}s ${String(ms).padStart(3, '0')}ms`,
-    usd: totalUSD,
-    usd_formatted: `$${totalUSD.toFixed(2)}`
+    // usd: totalUSD,
+    // usd_formatted: `$${totalUSD.toFixed(2)}`
   }
+}
+
+export function getLatestEntrySync(db: Low<WorkLogData>, member_id: string, type: undefined | boolean = undefined) {
+  const worklog_db = db
+  
+  if (worklog_db.data[member_id] == undefined) { return undefined }
+
+  const entries = worklog_db.data[member_id]
+  .filter(entry => type == undefined || entry.clock_in == type)
+
+  if (entries.length == 0) { return undefined }
+
+  return entries[entries.length - 1]
+}
+
+export async function getLatestEntry(member_id: string, type: undefined | boolean = undefined) {
+  const db = await WorklogDB()
+  
+  return getLatestEntrySync(db, member_id, type)
 }
 
 export const calcSuperOrdinal = (timestamp: number) => Math.round(DateTime.fromMillis(timestamp).startOf('day').diff(DateTime.fromMillis(0).startOf('day'), "days").days);
@@ -96,7 +112,7 @@ export async function getHeatMapData(member_id: string): Promise<{startDay: numb
 }
 
 export async function getDayMap(member_id: string): Promise<{[superOrdinal: string]: number}> {
-  const db = await fetchDB()
+  const db = await WorklogDB()
 
   // const startTimestamp = DateTime.now().minus(Duration.fromObject({days: CELL_COUNT})).startOf('day').toMillis()
   const startTimestamp = 0.0
@@ -189,14 +205,14 @@ export async function getDayMap(member_id: string): Promise<{[superOrdinal: stri
   return dayMap
 }
 
-export async function getPromotionLevel(member_id: string, as_of: number = 0): Promise<number> {
-  const db = await fetchDB()
+// export async function getPromotionLevel(member_id: string, as_of: number = 0): Promise<number> {
+//   const db = await WorklogDB()
   
-  return getPromotionLevelSync(db, member_id, as_of)
+//   return getPromotionLevelSync(db, member_id, as_of)
   
-}
+// }
 
-export function getPromotionLevelSync(db: Low<WorkLogData>, member_id: string, as_of: number = 0): number {
-  if (db.data[member_id] == undefined) { return 0 }
-  return db.data[member_id].filter(entry => entry.timestamp <= as_of && entry.type == "promotion").length
-}
+// export function getPromotionLevelSync(db: Low<WorkLogData>, member_id: string, as_of: number = 0): number {
+//   if (db.data[member_id] == undefined) { return 0 }
+//   return db.data[member_id].filter(entry => entry.timestamp <= as_of && entry.type == "promotion").length
+// }

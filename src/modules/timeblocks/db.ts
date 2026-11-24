@@ -5,7 +5,7 @@ type TimeblockRoleMapData = {
   [timeblock_id: string]: string
 }
 
-export const fetchDB = async () => {
+export const TimeblockRoleMapDB = async () => {
   const defaultData: TimeblockRoleMapData = {}
   return JSONFilePreset(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'db', 'timeblock_role_map.json'), defaultData)
 }
