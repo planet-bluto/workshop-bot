@@ -20,13 +20,23 @@ client.on(Events.ClientReady, async () => {
   }
 })
 
-async function handleMessage(message: Message) {
+export async function handleMessage(message: Message) {
   if (message.author.id == client.user.id) { return }
-  await Promise.all([
-    message.startThread({
-      name: `@${message.author.username} - ${message.cleanContent.length == 0 ? `${message.cleanContent.split("\n")[0].slice(0, 30)} - ` : ''}${DateTime.fromMillis(message.createdTimestamp).toLocaleString(DateTime.DATE_MED)}`
-    }),
+
+  let proms = []
+
+  if (!message.hasThread) {
+    proms.push(
+      message.startThread({
+        name: `@${message.author.username} - ${message.cleanContent.length == 0 ? `${message.cleanContent.split("\n")[0].slice(0, 30)} - ` : ''}${DateTime.fromMillis(message.createdTimestamp).toLocaleString(DateTime.DATE_MED)}`
+      })
+    )
+  }
+
+  proms.push(
     message.react("🔥"),
     message.react(process.env.BLUE_FIRE_EMOJI_ID)
-  ])
+  )
+
+  await Promise.all(proms)
 }
