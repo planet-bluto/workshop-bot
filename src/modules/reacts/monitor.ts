@@ -33,16 +33,18 @@ client.on(Events.ClientReady, async () => {
     }
   }
 
-  const results = await Promise.all(proms)
+  const _results = await Promise.all(proms)
+  
 
-  for (const result of results) {
-    if (result instanceof Message) { continue } // Skip because it's a forum start message and don't need it
+  // Future ref, do a message command for people to start a thread and reply 💀💀💀
+  // for (const result of results) {
+  //   if (result instanceof Message) { continue } // Skip because it's a forum start message and don't need it
 
-    for (const [_msgId, msg] of result) {
-      if (!process.env.REPLY_THREAD_CHANNELS.split(",").includes(msg.channelId)) { continue }
-      await handleMessage(msg)
-    }
-  }
+  //   for (const [_msgId, msg] of result) {
+  //     if (!process.env.REPLY_THREAD_CHANNELS.split(",").includes(msg.channelId)) { continue }
+  //     await handleMessage(msg)
+  //   }
+  // }
 })
 
 client.on(Events.MessageReactionAdd, (reaction) => {
