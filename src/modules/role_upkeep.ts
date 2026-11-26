@@ -122,7 +122,7 @@ export const createRole = async (type: RoleMapType, key, roleName, doUpkeep: boo
 
   // await db.write()
 
-  await sortRoles(type)
+  // await sortRoles(type)
 
   // if (doUpkeep) {await upkeep()}
 

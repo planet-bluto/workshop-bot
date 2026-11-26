@@ -140,7 +140,7 @@
 // //     print("role: ", role.name)
 // //     await role.delete()
 // //   }
-//   const sendingChannel = await client.channels.fetch("1575347970268864552")
+//   const sendingChannel = await client.channels.fetch("<CHANNEL ID>")
 
 //   if (!sendingChannel.isSendable()) { return }
 
