@@ -8,7 +8,7 @@ import path from 'path';
 
 // First time I was semi-competent with regex and I didn't need it- NVM
 const TimeblockRoleNameRegex = /[A-Z]{3}\ \-\ [A-F]\ BLOCK/m
-const LevelRoleNameRegex = /Lvl\.\ .{1,}\ Worker/m
+const LevelRoleNameRegex = /Lvl\.\ ([1-9]|[1-9][0-9]|100){1,}\ Worker/m
 
 
 // HERE WE ARE FETCHING ROLES, AUTO ASSIGNING ROLES BY NAME, AND SORTING AND COLORING ROLES AND SUCH
