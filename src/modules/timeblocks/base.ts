@@ -11,7 +11,7 @@ export const TIMEBLOCKS = ["A", "B", "C", "D", "E", "F"]
 export const TIMEBLOCK_HOUR_LENGTH = 24 / TIMEBLOCKS.length
 export const TIMEBLOCK_DURATION = (86400000 / TIMEBLOCKS.length)
 
-export const UTC_START_HOUR = 7
+export const UTC_START_HOUR = 5
 
 export const secTimestamp = (ms_timestamp: number) => Math.round(ms_timestamp / 1000)
 
