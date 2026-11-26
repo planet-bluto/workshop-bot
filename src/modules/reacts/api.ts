@@ -7,7 +7,7 @@ import { ShowcasePostData, ShowcasePostDataEntry } from "./db"
 import { colord } from "colord"
 
 
-export const HIGHLIGHT_THRESHOLD = 1
+export const HIGHLIGHT_THRESHOLD = 10
 
 export const MONITORING_CHANNELS = [
   process.env.SHOWCASE_CHANNEL_ID,
