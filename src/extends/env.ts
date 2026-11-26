@@ -20,6 +20,7 @@ export interface IProcessEnv {
   WIPS_CHANNEL_ID: string;
   SHOWCASE_CHANNEL_ID: string;
   PROJECTS_CHANNEL_ID: string;
+  POST_DAY_CHANNEL_ID: string;
 
   COWORKING_VOICE_ID: string;
   COWORKING_VOICE_CHANNELS: string;

@@ -35,7 +35,10 @@ const rest = new REST().setToken(process.env.TOKEN);
 })();
 
 
-client.on(Events.InteractionCreate, (interaction: any) => {
+client.on(Events.InteractionCreate, (interaction) => {
+	if (!interaction.isCommand()) { return }
+	if (interaction.guildId == process.env.GUILD_ID) { return }
+
 	if (interaction?.commandName == undefined) return;
 	print("interaction.commandName: ", interaction.commandName)
 

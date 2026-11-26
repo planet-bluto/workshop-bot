@@ -12,7 +12,8 @@ export const HIGHLIGHT_THRESHOLD = 10
 export const MONITORING_CHANNELS = [
   process.env.SHOWCASE_CHANNEL_ID,
   process.env.WIPS_CHANNEL_ID,
-  process.env.PROJECTS_CHANNEL_ID
+  process.env.PROJECTS_CHANNEL_ID,
+  process.env.POST_DAY_CHANNEL_ID
 ]
 
 
@@ -36,7 +37,8 @@ export async function getOrInitShowcasePost(db: Low<ShowcasePostData>, msg: Mess
     reply_thread_url: msg?.thread?.url ?? (msg.channel as ThreadChannel)?.url,
     reacts: 0,
     forward_id: undefined,
-    footer_id: undefined
+    footer_id: undefined,
+    for_post_day: (msg.channelId == process.env.POST_DAY_CHANNEL_ID)
   }
 
   db.data.push(newEntry)
@@ -75,6 +77,7 @@ export async function doForwardFooter(db: Low<ShowcasePostData>, idx: number) {
     [process.env.WIPS_CHANNEL_ID]: "WORK-IN-PROGRESS",
     [process.env.SHOWCASE_CHANNEL_ID]: "SHOWCASE",
     [process.env.PROJECTS_CHANNEL_ID]: "PROJECTS",
+    [process.env.POST_DAY_CHANNEL_ID]: "POST-DAY",
   }
   // db.data[idx].thread_id
   // const post = await ((postChannel as TextChannel).messages ?? (postChannel as TextChannel).).fetch(db.data[idx].post_id)

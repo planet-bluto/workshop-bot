@@ -11,6 +11,7 @@ export type ShowcasePostDataEntry = {
   reacts: number; // Showcase Post's Unique Reaction Count
   forward_id: string | undefined; // Forwarded Message's ID
   footer_id: string | undefined; // Forwarded Message's Footer Message ID
+  for_post_day: boolean; // Whether message was for post-day
 }
 
 export type ShowcasePostData = ShowcasePostDataEntry[]

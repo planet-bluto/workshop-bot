@@ -27,7 +27,14 @@ async function level_upkeep() {
     updateClockedInStatus(member_id, currently_coworking_members.includes(member_id))
   }
 
-  for (const entry of post_db.data) { setEXP(entry.author_id, `${REACT_EXP_TYPE_PREFIX}${entry.post_id}`, entry.reacts * rates.PER_REACT, true) }
+  for (const entry of post_db.data) {
+    setEXP(
+      entry.author_id,
+      `${REACT_EXP_TYPE_PREFIX}${entry.post_id}`,
+      (entry.reacts * rates.PER_REACT) * (entry.for_post_day ? 2 : 1),
+      true
+    )
+  }
 
   setInterval(coworkingLevelingCheck, 1000)
 
