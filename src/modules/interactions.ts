@@ -4,6 +4,7 @@ import { client } from "./client";
 import forwardToWipsInteraction from "./forward_to_wips"
 import timeblockInteraction from "./timeblocks/setup_command"
 import draftAnnouncementInteraction from "./announcement_drafter"
+import { previewCommand, publishCommand } from "./announcement_drafter"
 import { WorkLogCommand } from "./stat_commands";
 
 export type ValidBuilders = ContextMenuCommandBuilder | SlashCommandBuilder
@@ -13,7 +14,8 @@ const commands = new Map<string, [ValidBuilders, (interaction: Interaction) => P
   forwardToWipsInteraction,
   timeblockInteraction,
 	draftAnnouncementInteraction,
-	WorkLogCommand
+	WorkLogCommand,
+	previewCommand, publishCommand
 ]);
 
 const rest = new REST().setToken(process.env.TOKEN);

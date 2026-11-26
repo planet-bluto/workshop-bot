@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, GuildEmoji, InteractionContextType, Message, MessageCreateOptions, MessageFlags, PermissionFlagsBits, PermissionsBitField, PrivateThreadChannel, SlashCommandBuilder, TextChannel, ThreadChannel } from "discord.js"
+import { BaseChannel, ChannelType, ChatInputCommandInteraction, GuildEmoji, InteractionContextType, InteractionResponse, Message, MessageCreateOptions, MessageFlags, PermissionFlagsBits, PermissionsBitField, PrivateThreadChannel, SlashCommandBuilder, SlashCommandChannelOption, TextChannel, ThreadChannel } from "discord.js"
 import { client } from "./client"
 import { CommandEntry } from "./interactions"
 import { DateTime } from "luxon"
@@ -53,13 +53,59 @@ export default [
       //   name: `Announcement Draft - ${DateTime.now().toFormat("DD")}`,
       // })
 
-      const collector = threadChannel.createMessageCollector()
-      collector.on("collect", monitorForCommands)
+      // const collector = threadChannel.createMessageCollector()
+      // collector.on("collect", monitorForCommands)
 
       await reply("### ✅ Draft thread started!\n-# Type all the messages of your announcement in here, **remember to mention all the roles you want pinged for the announcement within your messages!!**")
     }
   ]
 ] as CommandEntry
+
+type ReplyFunc = (content: string) => Promise<Message> | Promise<InteractionResponse>
+function innerThreadCommand(cmd_name: string, cmd_desc: string, func: (interaction: ChatInputCommandInteraction, reply?: ReplyFunc) => void) {
+  let baseSlashCommand = new SlashCommandBuilder()
+    .setName(cmd_name)
+    .setDescription(cmd_desc)
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setContexts(InteractionContextType.Guild)
+
+  if (cmd_name == "publish_announcement") {
+    baseSlashCommand.addChannelOption(new SlashCommandChannelOption()
+      .setName("target_channel")
+      .setRequired(false)
+      .setDescription("Channel to actually publish draft to, defaults to main announcements channel")
+      .addChannelTypes(ChannelType.AnnouncementThread, ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PrivateThread, ChannelType.PublicThread, ChannelType.GuildForum, ChannelType.GuildStageVoice)
+    )
+  }
+  return [
+    cmd_name,
+    [
+      baseSlashCommand,
+      async (interaction: ChatInputCommandInteraction) => {
+        let deferred = false
+
+        const reply = (content: string) => (deferred ? interaction.editReply({
+          content,
+        }) : interaction.reply({
+          content,
+          flags: MessageFlags.Ephemeral
+        }))
+
+
+
+        if ((interaction.channel as ThreadChannel).parentId != process.env.ANNOUNECMENT_DRAFT_CHANNEL_ID) {
+          await reply(`**You have to use this in an announcement draft thread inside of <#${process.env.ANNOUNECMENT_DRAFT_CHANNEL_ID}>!**`)
+          return
+        }
+
+        await interaction.deferReply()
+        deferred = true
+
+        await func(interaction, reply)
+      }
+    ]
+  ] as CommandEntry
+}
 
 // let AWAITING_CHANNELS = new Set<string>()
 let SYSTEM_MESSAGES = new Map<string, string[]>()
@@ -93,40 +139,41 @@ function untrackSysMessage(chlId: string, ...msgId: string[]) {
   }
 }
 
-async function monitorForCommands(message: Message) {
-  const checkForCommand = (...cmds: string[]) => cmds.some(cmd => (message.content.toLowerCase().startsWith("!" + cmd)))
+export const previewCommand = innerThreadCommand("preview_announcement", "Preview draft inside thread before publishing", async (interaction: ChatInputCommandInteraction, reply: ReplyFunc) => {
+  // trackSysMessage(interaction.channelId, interaction.id)
+
+  const header_message = await interaction.editReply(`\`\`\`py\n# Here's a preview of what the announcement would look like forwarded:\n\`\`\``)
+  trackSysMessage(interaction.channelId, header_message.id)
+
+  const messages = await forwardDraftsToAnnouncements(interaction.channelId, interaction.channelId)
+  trackSysMessage(interaction.channelId, ...messages.map(msg => msg.id))
+
+  const footer_message = await (interaction.channel as TextChannel).send(`\`\`\`py\n# Preview End.\n\`\`\`\n -# Deleting <t:${Math.round(Date.now() / 1000) + PREVIEW_AUTO_DELETE_TIMEOUT_SECS}:R>...`)
+  trackSysMessage(interaction.channelId, footer_message.id)
+
+  // SYSTEM_MESSAGES.set(message.channelId, [])
+  // message, header_message, ...messages, footer_message
+
+  // AWAITING_CHANNELS.delete(message.channelId)
+
+  setTimeout(() => { deletePreviewMessages(interaction.channelId) }, 1000 * PREVIEW_AUTO_DELETE_TIMEOUT_SECS)
+})
+
+export const publishCommand = innerThreadCommand("publish_announcement", "Publish announcement to announcements OR specified channel", async (interaction: ChatInputCommandInteraction) => {
+  const targetChannel = interaction.options.getChannel("target_channel", false)
+  print("targetChannel: ", targetChannel)
+  const TARGET_CHANNEL_ID = (targetChannel?.id ?? process.env.ANNOUNCEMENT_CHANNEL_ID)
+
+  const prevReply = await interaction.fetchReply()
+  trackSysMessage(interaction.channelId, prevReply.id)
   
-  if (checkForCommand("preview")) {
-    // AWAITING_CHANNELS.add(message.channelId)
+  const sentMessages = await forwardDraftsToAnnouncements(interaction.channelId, TARGET_CHANNEL_ID)
+  if (sentMessages.length == 0) { return }
 
-    trackSysMessage(message.channelId, message.id)
+  await interaction.editReply(`-# <@${interaction.user.id}>\n# ✅ Announcement Sent!\n-# See here: ${sentMessages[0].url}`)
 
-    const header_message = await message.reply(`\`\`\`py\n# Here's a preview of what the announcement would look like forwarded:\n\`\`\``)
-    SYSTEM_MESSAGES.get(message.channelId).push(header_message.id)
-
-    const messages = await forwardDraftsToAnnouncements(message.channelId, message.channelId)
-    trackSysMessage(message.channelId, ...messages.map(msg => msg.id))
-
-    const footer_message = await (message.channel as TextChannel).send(`\`\`\`py\n# Preview End.\n\`\`\`\n -# Deleting <t:${Math.round(Date.now() / 1000) + PREVIEW_AUTO_DELETE_TIMEOUT_SECS}:R>...`)
-    trackSysMessage(message.channelId, footer_message.id)
-
-    // SYSTEM_MESSAGES.set(message.channelId, [])
-    // message, header_message, ...messages, footer_message
-
-    // AWAITING_CHANNELS.delete(message.channelId)
-
-    setTimeout(() => { deletePreviewMessages(message.channelId) }, 1000 * PREVIEW_AUTO_DELETE_TIMEOUT_SECS)
-  } else if (checkForCommand("publish", "end", "send")) {
-    trackSysMessage(message.channelId, message.id)
-    const sentMessages = await forwardDraftsToAnnouncements(message.channelId)
-    if (sentMessages.length == 0) { return }
-
-    await (message.channel as TextChannel).send(`-# <@${message.author.id}>\n# ✅ Announcement Sent!\n-# See here: ${sentMessages[0].url}`)
-    
-    untrackSysMessage(message.channelId, message.id)
-    await message.delete()
-  }
-}
+  untrackSysMessage(interaction.channelId, prevReply.id)
+})
 
 async function forwardDraftsToAnnouncements(reading_draft_thread_id: string, target_channel: string = process.env.ANNOUNCEMENT_CHANNEL_ID): Promise<Message[]> {
   print("Draft finished, forwarding ...")
