@@ -2,16 +2,19 @@ import schedule from "node-schedule"
 import { Events, VoiceChannel } from "discord.js";
 import { DateTime, Duration } from "luxon";
 
-import { client } from "../client"
-import { TIMEBLOCKS, TIMEBLOCK_HOUR_LENGTH, UTC_START_HOUR, WEEKDAYS } from "./base";
-import { TimeblockRoleMapDB } from "./db";
 import { modulo } from "../../lib/modulo";
+
+import { client } from "../client"
+import { RoleMapDB } from "../role_upkeep";
+
+import { TIMEBLOCKS, TIMEBLOCK_HOUR_LENGTH, UTC_START_HOUR, WEEKDAYS } from "./base";
+
 
 const rule = new schedule.RecurrenceRule();
 rule.minute = 0;
 rule.tz = 'Etc/UTC';
 
-const job = schedule.scheduleJob(rule, hourlyPingCheck);
+schedule.scheduleJob(rule, hourlyPingCheck);
 
 client.on(Events.MessageCreate, async (msg) => {
   if (msg.author.id == "334039742205132800" && msg.content.startsWith("!pingchecktest")) { hourlyPingCheck() }
@@ -54,7 +57,7 @@ async function hourlyPingCheck() {
   print("timeblockId: ", timeblockId)
   print("prev_timeblockId: ", prev_timeblockId)
 
-  const db = await TimeblockRoleMapDB()
+  const db = await RoleMapDB("timeblock")
 
   const pending_roleId = db.data[timeblockId]
   const prev_pending_roleId = db.data[prev_timeblockId]

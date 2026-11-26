@@ -1,9 +1,14 @@
 import { Events } from "discord.js";
 
-import { client } from "../client";
-import { WorklogDB } from "./db";
 import TaskManager from "../../lib/taskManager";
-import { updateClockedInStatus } from "../levels/api";
+
+import { client } from "../client";
+
+import { addEXP, COWORK_EXP_TYPE, updateClockedInStatus } from "../levels/api";
+import rates from '../levels/rates';
+
+import { WorklogDB } from "./db";
+import { getLatestEntry } from "./calc";
 
 const taskManager = new TaskManager(true, false)
 
@@ -12,6 +17,13 @@ async function handleClock(member_id: string, clock_in: boolean) {
     const db = await WorklogDB()
 
     if (db.data[member_id] == undefined) { db.data[member_id] = [] }
+
+    if (clock_in == false) {
+      const clockIn = await getLatestEntry(member_id, true)
+      const timeSinceMS = (Date.now() - clockIn.timestamp)
+      
+      addEXP(member_id, COWORK_EXP_TYPE, timeSinceMS * rates.COWORK_PER_MS)
+    }
 
     db.data[member_id].push({
       type: "time_punch",

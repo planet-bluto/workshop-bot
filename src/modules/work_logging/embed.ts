@@ -11,6 +11,7 @@ import { DateTime } from 'luxon';
 import { WEEKDAYS } from '../timeblocks/base';
 import { calcSuperOrdinal, calcMyWeekDay, timestampFromSuperOrdinal } from './calc';
 import { modulo } from '../../lib/modulo';
+import { calcEXPinLevel, calcLevel, calcLevelProgress } from '../levels/api';
 // export const calcMyWeekDay = (timestamp: number) => modulo((modulo(DateTime.fromMillis(timestamp).weekday, 7) - 1), 7);
 
 export const WIDTH = 800
@@ -29,13 +30,24 @@ export const CELL_SIZE = (WIDTH - ((GAP * (COL_COUNT - 1)) + (PADDING * 2) + LEF
 
 export const HEIGHT = Math.ceil((ROW_COUNT * CELL_SIZE) + (PADDING * 2) + (GAP * (ROW_COUNT - 1)) + TOP_SIDE)
 
+export const PROGRESS_BAR_HEIGHT = 32
+const PROGRESS_BAR_Y_MARGIN = 48
+const PROGRESS_BAR_X = PADDING
+const PROGRESS_BAR_Y = HEIGHT + PROGRESS_BAR_Y_MARGIN
+const PROGRESS_BAR_WIDTH = WIDTH - PROGRESS_BAR_X - PADDING
 
-// client.on("messageCreate", (msg) => {if (msg.content == "!gridtest") { generateGrid() }})
+export const WHOLE_HEIGHT = HEIGHT + PROGRESS_BAR_Y_MARGIN + PROGRESS_BAR_HEIGHT + PADDING
+
+
+// client.on("messageCreate", (msg) => {if (msg.content == "!gridtest") { createEmbedImage() }})
 
 GlobalFonts.registerFromPath(path.join(process.env.CANVAS_DIR, 'fonts', 'NunitoSans.ttf'), 'NunitoSans')
 
 
-export async function generateGrid(heatmapData: {startDay: number; data: number[]}): Promise<{width: number; height: number; buffer: Buffer} | undefined> {
+export async function createEmbedImage(heatmapData: {startDay: number; data: number[]}, EXP: number): Promise<{width: number; height: number; buffer: Buffer} | undefined> {
+  const LVL = calcLevel(EXP)
+  const LVLprog = calcLevelProgress(EXP)
+
   print("heatmapData: ", heatmapData)
   // print("WIDTH: ", WIDTH)
   // print("HEIGHT: ", HEIGHT)
@@ -53,7 +65,7 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
   // print("firstVisibleOrdinal: ", firstVisibleOrdinal)
   const dtFromIdx = i => DateTime.fromMillis(timestampFromSuperOrdinal(firstVisibleOrdinal + i))
 
-  const canvas = createCanvas(WIDTH, HEIGHT)
+  const canvas = createCanvas(WIDTH, WHOLE_HEIGHT)
   const ctx = canvas.getContext('2d')
 
   ctx.fillStyle = "#024aca"
@@ -97,7 +109,13 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
 
       // print(`${idxSuperOrd} > ${nowSuperOrd}`)
 
-      ctx.fillStyle = (idxSuperOrd + 1) > nowSuperOrd ? "#00000000" : colord("#282828").mix(colord("#2765ff"), dataToMap[i], "rgb").toHex()
+      ctx.fillStyle = 
+        (idxSuperOrd + 1) > nowSuperOrd ?
+          "#00000000" :
+          dataToMap[i] == 0 ?
+            "#2828287c" :
+            colord("#282828").mix(colord("#2765ff"), dataToMap[i], "rgb").toHex()
+      
       ctx.fillRect(
         LEFT_SIDE + PADDING + (x * GAP) + (x * CELL_SIZE),
         TOP_SIDE + PADDING + (y * GAP) + (y * CELL_SIZE),
@@ -117,7 +135,7 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
   const squares = await loadImage(canvas.toBuffer("image/png"))
   ctx.reset()
   ctx.fillStyle = "#1515159c"
-  ctx.fillRect(0, 0, WIDTH, HEIGHT)
+  ctx.fillRect(0, 0, WIDTH, WHOLE_HEIGHT)
   ctx.drawImage(squares, 0, 0)
 
   for (const weekday of WEEKDAYS) {
@@ -151,14 +169,49 @@ export async function generateGrid(heatmapData: {startDay: number; data: number[
     }
   }
 
+  ctx.font = "900 24px NunitoSans";
+  ctx.textAlign = "left"
+  ctx.fillText(
+      `LVL ${LVL} (${(LVLprog * 100).toFixed(2)}%)`,
+      PROGRESS_BAR_X,
+      PROGRESS_BAR_Y - 28
+  )
+
+  ctx.fillStyle = "#ffffff20"
+  ctx.font = "900 24px NunitoSans";
+  ctx.textAlign = "right"
+  ctx.fillText(
+      `[ ${EXP.toFixed(2)}WP / ${calcEXPinLevel(LVL+1).toFixed(2)}WP ]`,
+      PROGRESS_BAR_X + PROGRESS_BAR_WIDTH,
+      PROGRESS_BAR_Y - 28
+  )
+
+  ctx.fillStyle = "#282828"
+  ctx.fillRect(
+    PROGRESS_BAR_X,
+    PROGRESS_BAR_Y,
+    PROGRESS_BAR_WIDTH,
+    PROGRESS_BAR_HEIGHT
+  )
+
+  print("LVLprog: ", LVLprog)
+
+  ctx.fillStyle = "#2765ff"
+  ctx.fillRect(
+    PROGRESS_BAR_X,
+    PROGRESS_BAR_Y,
+    PROGRESS_BAR_WIDTH * LVLprog,
+    PROGRESS_BAR_HEIGHT
+  )
+
   return {
     width: WIDTH,
-    height: HEIGHT,
+    height: WHOLE_HEIGHT,
     buffer: canvas.toBuffer("image/png")
   }
 }
 
-generateGrid({
+createEmbedImage({
   startDay: DateTime.now().startOf('day').toMillis(),
   data: [0.1, 0.25, 0.5, 1.0]
-}).then(grid => {if (grid) {fs.writeFile("out.png", grid.buffer, () => {})}})
+}, 230).then(grid => {if (grid) {fs.writeFile("out.png", grid.buffer, () => {})}})

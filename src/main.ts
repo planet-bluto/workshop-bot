@@ -6,8 +6,9 @@ import "./extends/env"
 
 import "./lib/arrayLib.js"
 
-import "./modules/timecheck"
 import "./modules/volume_setup"
+
+import "./modules/timecheck"
 import "./modules/express"
 import "./modules/client"
 import "./modules/check_for_streams"
@@ -16,12 +17,12 @@ import "./modules/announcement_drafter"
 import "./modules/interactions"
 
 import "./modules/levels/upkeep"
+import "./modules/levels/events"
 
 import "./modules/timeblocks/ping_check"
 import "./modules/timeblocks/button_interactions"
 
 import "./modules/work_logging/main"
 import "./modules/work_logging/embed"
-// import "./modules/fireboard"
 
-print()
+import "./modules/reacts/monitor"

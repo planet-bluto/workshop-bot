@@ -1,6 +1,6 @@
 // const print = console.log
 
-import { Client, Events, GatewayIntentBits } from 'discord.js'
+import { APIMessage, Client, Events, GatewayIntentBits, Message, Routes } from 'discord.js'
 import { getLeaderboard } from './levels/api';
 
 export const client = new Client({ intents: Object.values(GatewayIntentBits).filter(entry => typeof(entry) == "number") }) // <= fuck you discord

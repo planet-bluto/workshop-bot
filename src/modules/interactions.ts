@@ -4,7 +4,7 @@ import { client } from "./client";
 import forwardToWipsInteraction from "./forward_to_wips"
 import timeblockInteraction from "./timeblocks/setup_command"
 import draftAnnouncementInteraction from "./announcement_drafter"
-import { WorkLogCommand } from "./work_logging/stat_commands";
+import { WorkLogCommand } from "./stat_commands";
 
 export type ValidBuilders = ContextMenuCommandBuilder | SlashCommandBuilder
 export type CommandEntry = [string, [ValidBuilders, (interaction: Interaction) => Promise<void>]]

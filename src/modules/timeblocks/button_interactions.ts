@@ -1,7 +1,8 @@
 import { ButtonInteraction, Events, GuildMember, GuildMemberRoleManager, MessageFlags, Role } from "discord.js"
 
 import { client } from "../client"
-import { TimeblockRoleMapDB } from "./db"
+import { getOrCreateRole } from "../role_upkeep"
+
 import { TIMEBLOCKS, WEEKDAYS } from "./base"
 
 client.on(Events.InteractionCreate, async (raw_interaction) => {
@@ -40,9 +41,9 @@ client.on(Events.InteractionCreate, async (raw_interaction) => {
 
   const mode: "REMOVE" | "ADD" | "TOGGLE" = (dayBits[1] as "REMOVE" | "ADD" | undefined) ?? "TOGGLE"
 
-  const db = await TimeblockRoleMapDB()
+  // const db = await TimeblockRoleMapDB()
   
-  const guild = await client.guilds.fetch(process.env.GUILD_ID)
+  // const guild = await client.guilds.fetch(process.env.GUILD_ID)
 
 
   const days = dayBits[0] == "ALL" ? WEEKDAYS : [raw_day]
@@ -58,22 +59,8 @@ client.on(Events.InteractionCreate, async (raw_interaction) => {
     for (const day of days) {
       const timeblockId = `${day}_${timeblock}`
       const roleName = `${day} - ${timeblock} BLOCK`
-    
-      let pending_role: Role | null = db.data[timeblockId] ? await guild.roles.fetch(db.data[timeblockId]) : null
 
-      const createRole = async () => {
-        pending_role = await guild.roles.create({
-          name: roleName
-        })
-
-        if (pending_role == null || pending_role == undefined) { return }
-
-        db.data[timeblockId] = pending_role.id
-
-        await db.write()
-      }
-      // Create role if map is missing
-      if (db.data[timeblockId] == undefined || pending_role == null) { await createRole() }
+      let pending_role: Role = await getOrCreateRole("timeblock", timeblockId, roleName)
 
       if (pending_role == null) {
         // await reply("Error, couldn't find or create timeblock role")
@@ -85,23 +72,14 @@ client.on(Events.InteractionCreate, async (raw_interaction) => {
       const operation = (mode == "TOGGLE" ? (hasRole ? 'remove' : 'add') : mode.toLowerCase());
 
       (operation == 'add' ? add_operations : remove_operations).push(pending_role.id)
-      // pendingOperations.push({ operation, id: pending_role.id })
-      
-      // await member_refetched.roles[operation](pending_role.id)
 
       operationLog.push({success: true, content: `${operation == "remove" ? `- Removed [ ${roleName} ] role` : `+ Added [ ${roleName} ] role`}`})
     }
-
-    // const add_operations = pendingOperations.filter(entry => entry.operation == "add")
-    // await Promise.all(pendingOperations.map(({ operation, id }) => member_refetched.roles[operation](id)))
   }
 
   if (add_operations.length > 0) { await member_refetched.roles.add(add_operations) }
   if (remove_operations.length > 0) { await member_refetched.roles.remove(remove_operations) }
 
-  // if (errored) { return }
-
-  // const contents = operationLog.join("\n")
   let header = ""
   
   const results = operationLog.map(entry => entry.success)

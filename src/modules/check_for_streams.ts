@@ -1,15 +1,14 @@
-import { ActivityType, Guild, TextChannel } from "discord.js"
-import { client } from "./client"
-
+import { ActivityType, Events, TextChannel } from "discord.js"
 import { Client } from "discord.js-selfbot-v13"
+import { AppTokenAuthProvider } from '@twurple/auth'
+import { ApiClient, HelixStream, UserIdResolvable } from "@twurple/api"
+import { EventSubMiddleware } from "@twurple/eventsub-http"
+import { EventSubSubscription } from "@twurple/eventsub-base"
 
-import { AppTokenAuthProvider } from '@twurple/auth';
-import { ApiClient, HelixStream, UserIdResolvable } from "@twurple/api";
-import { wait } from "./wait";
-import { EventSubMiddleware } from "@twurple/eventsub-http";
-// import { EventSubWsListener } from "@twurple/eventsub-ws";
-import { EventSubSubscription } from "@twurple/eventsub-base";
-import { app, ExpressEvents } from "./express";
+import { client } from "./client"
+import { app, ExpressEvents } from "./express"
+import { wait } from "./wait"
+
 
 const authProvider = new AppTokenAuthProvider(process.env["TWITCH_CLIENT_ID"], process.env["TWITCH_CLIENT_SECRET"]);
 const apiClient = new ApiClient({ authProvider })
@@ -20,9 +19,9 @@ const twitchListener = new EventSubMiddleware({
   secret: process.env["SECRET"],
 })
 
-print("authProvider: ", authProvider)
-print("apiClient: ", apiClient)
-print("twitchListener: ", twitchListener)
+// print("authProvider: ", authProvider)
+// print("apiClient: ", apiClient)
+// print("twitchListener: ", twitchListener)
 
 
 // twitchListener.onUserSocketConnect(console.log.bind(null, "twitchListener.onUserSocketConnect: "))
@@ -206,7 +205,7 @@ async function listenForStream(userId: UserIdResolvable, timestamp: number) {
   LISTENERS[`${userId}_offline_${timestamp}`] = {id: (userId as string), listener: offlineListener, timestamp, key: `${userId}_offline_${timestamp}`}
 }
 
-client.on("ready", async () => {
+client.on(Events.ClientReady, async () => {
   setupStreamListeners()
   // setInterval(setupStreamListeners, 10000)
   // let guild = await client.guilds.fetch(process.env.GUILD_ID)

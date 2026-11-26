@@ -2,13 +2,15 @@ import { Low } from "lowdb/lib";
 import { WorklogDB, WorkLogData } from "./db";
 import { DateTime, Duration } from "luxon";
 import { modulo } from "../../lib/modulo";
+import rates from "../levels/rates";
+import { ShowcasePostDB } from "../reacts/db";
 // import { CELL_COUNT } from "./embed";
 
 const HOUR = 3600000
 const MIN = 60000
 const SEC = 1000
 
-const BASE_WAGE = 7.25
+// const BASE_WAGE = 7.25
 
 export interface WorkTimeOutput {
   in_ms: number;
@@ -34,7 +36,7 @@ export function getWorkTimeSync(db: Low<WorkLogData>, member_id: string, startTi
   print("entries: ", entries)
 
   let totalTimeMS = 0.0
-  let totalUSD = 0.0
+  // let totalUSD = 0.0
   // let currentWage = BASE_WAGE + (promotion_level * PROMOTION_RATE)
 
   const addTime = (ms: number) => {
@@ -153,10 +155,10 @@ export async function getDayMap(member_id: string): Promise<{[superOrdinal: stri
     const endOrd = calcSuperOrdinal(end)
     
     if (startOrd == endOrd) {
-      dayMap[String(startOrd)] += (end - start)
+      dayMap[String(startOrd)] += (end - start) * rates.COWORK_PER_MS
     } else {
-      dayMap[String(startOrd)] += (calcEndOfDay(start) - start)
-      dayMap[String(endOrd)] += (end - calcStartOfDay(end))
+      dayMap[String(startOrd)] += (calcEndOfDay(start) - start) * rates.COWORK_PER_MS
+      dayMap[String(endOrd)] += (end - calcStartOfDay(end)) * rates.COWORK_PER_MS
     }
 
     // for (const ord of [startOrd, endOrd]) {
@@ -197,6 +199,13 @@ export async function getDayMap(member_id: string): Promise<{[superOrdinal: stri
   const dayMapKeys = Object.keys(dayMap)
   for (let i = Number(dayMapKeys[0]); i < Number(dayMapKeys[dayMapKeys.length-1]); i++) {
     if (dayMap[String(i)] == undefined) { dayMap[String(i)] = 0.0 }
+  }
+
+  const post_db = await ShowcasePostDB()
+  const member_posts = post_db.data.filter(entry => entry.author_id == member_id)
+  for (const entry of member_posts) {
+    const superOrdinal = calcSuperOrdinal(entry.post_timestamp)
+    dayMap[String(superOrdinal)] += entry.reacts * rates.PER_REACT
   }
 
   print("dayMap: ", dayMap)
