@@ -50,7 +50,7 @@ export const RoleDict: {[index: string]: RoleDictEntry} = {
         return TIMEBLOCKS.indexOf(blockA) - TIMEBLOCKS.indexOf(blockB)
       }
     },
-    headerRoleId: process.env.LEVELS_HEADER_ROLE
+    headerRoleId: process.env.TIMEBLOCK_HEADER_ROLE
   },
   levels: {
     fetchDB: () => RoleMapDB("levels"),
@@ -79,11 +79,19 @@ export const getOrCreateRole = async (type: "timeblock" | "levels", key, roleNam
 
   if (pending_role == null) { pending_role = await createRole(type, key, roleName) }
 
+  if (pending_role != null && db.data[key] != pending_role?.id) {
+    db.data[key] = pending_role.id
+
+    await db.write()
+  }
+
   return pending_role
 }
 
 export const createRole = async (type: RoleMapType, key, roleName, doUpkeep: boolean = true) => {
-  const {fetchDB, upkeep, sortFunc, headerRoleId} = RoleDict[type]
+  print(type, key, roleName)
+
+  const {fetchDB} = RoleDict[type]
 
   const db = await fetchDB()
   const guild = await client.guilds.fetch(process.env.GUILD_ID)
@@ -95,6 +103,12 @@ export const createRole = async (type: RoleMapType, key, roleName, doUpkeep: boo
   // if (newRole == null || newRole == undefined) { return }
 
   db.data[key] = newRole.id
+
+  if (newRole != null && db.data[key] != newRole?.id) {
+    db.data[key] = newRole.id
+    
+    await db.write()
+  }
 
   // Sorting Func....
   // const entries = Object.keys(db.data)
@@ -135,14 +149,21 @@ const sortRoles = async (type: RoleMapType) => {
 
   db.data = Object.fromEntries(entries)
 
-  const headerRole = await guild.roles.fetch(headerRoleId)
+  // let headerRole = await guild.roles.fetch(headerRoleId)
 
-  const positionPayload = Object.values(db.data).map((role, idx) => ({
-    role,
-    position: headerRole.rawPosition - (idx + 2)
-  }))
+  let idx = 0
+  for (const roleId of Object.values(db.data)) {
+    const headerRole = await guild.roles.fetch(headerRoleId)
+    await guild.roles.setPosition(roleId, headerRole.rawPosition - (idx + 1))
+    idx += 1
+  }
 
-  await guild.roles.setPositions(positionPayload)
+  // const positionPayload = Object.values(db.data).map((role, idx) => ({
+  //   role,
+  //   position: headerRole.rawPosition - (idx + 1)
+  // }))
+
+  // await guild.roles.setPositions(positionPayload)
 }
 
 const generalUpkeep = async (type: "timeblock" | "levels") => {
@@ -153,15 +174,17 @@ const generalUpkeep = async (type: "timeblock" | "levels") => {
   const guild = await client.guilds.fetch(process.env.GUILD_ID)
   const roles = await guild.roles.fetch()
 
-  print("roles => ", roles.map(role => ({
-    id: role.id,
-    name: role.name,
-    position: role.position,
-    rawPosition: role.rawPosition
-  })))
+  // print("roles => ", roles.map(role => ({
+  //   id: role.id,
+  //   name: role.name,
+  //   position: role.position,
+  //   rawPosition: role.rawPosition
+  // })))
 
 
   const databasedIds = Object.keys(db.data)
+  print("type: ", type)
+  print("databasedIds: ", databasedIds)
   for (const id of databasedIds) {
     const roleName = nameMaker(id)
 
@@ -199,8 +222,6 @@ export async function levelRoleUpkeep() {
 }
 
 client.on(Events.ClientReady, async () => {
-  await Promise.all([
-    timeblockRoleUpkeep(),
-    levelRoleUpkeep(),
-  ])
+  await timeblockRoleUpkeep()
+  await levelRoleUpkeep()
 })
