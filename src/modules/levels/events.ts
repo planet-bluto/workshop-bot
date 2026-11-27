@@ -26,6 +26,6 @@ LevelEvents.on("level_up", async (member_id: string, newLVL: number) => {
   const embedMsgOptions = await WorkCardEmbed(member)
 
   await statusChannel.send(Object.assign(embedMsgOptions, {
-    content: `# *@${member.id} has leveled up to...* \`\`Lvl. ${newLVL}\`\`!`
+    content: `# *<@${member.id}> has leveled up to...* \`\`Lvl. ${newLVL}\`\`!`
   }))
 })
