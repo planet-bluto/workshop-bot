@@ -1,6 +1,8 @@
 // import path from 'path'
 // import { JSONFilePreset } from 'lowdb/node'
 
+import { TimeRange } from "../timerange";
+
 export type LevelCacheData = {
   member_id: string;
   exp: EXPEntries;
@@ -8,7 +10,10 @@ export type LevelCacheData = {
 }[]
 
 export type EXPEntries = {
-  [index: string]: number;
+  [index: string]: {
+    exp: number,
+    timeRange: TimeRange // Timestamp to Timestamp
+  };
 }
 
 export const PRESET_DATA = {

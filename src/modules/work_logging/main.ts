@@ -4,7 +4,7 @@ import TaskManager from "../../lib/taskManager";
 
 import { client } from "../client";
 
-import { addEXP, COWORK_EXP_TYPE, updateClockedInStatus } from "../levels/api";
+import { setEXP, COWORK_EXP_TYPE, updateClockedInStatus } from "../levels/api";
 import rates from '../levels/rates';
 
 import { WorklogDB } from "./db";
@@ -22,7 +22,15 @@ async function handleClock(member_id: string, clock_in: boolean) {
       const clockIn = await getLatestEntry(member_id, true)
       const timeSinceMS = (Date.now() - clockIn.timestamp)
       
-      addEXP(member_id, COWORK_EXP_TYPE, timeSinceMS * rates.COWORK_PER_MS)
+      setEXP(
+        member_id,
+        `${COWORK_EXP_TYPE}_${clockIn.timestamp}_${Date.now()}`,
+        timeSinceMS * rates.COWORK_PER_MS,
+        {timeRange: [
+          clockIn.timestamp,
+          Date.now()
+        ]}
+      )
     }
 
     db.data[member_id].push({

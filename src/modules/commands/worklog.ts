@@ -1,13 +1,21 @@
-import { AttachmentBuilder, ChatInputCommandInteraction, EmbedType, GuildMember, MessageFlags, SlashCommandBuilder, SlashCommandMentionableOption, SlashCommandUserOption, User } from "discord.js"
-// import { colord } from "colord"
+import {
+  AttachmentBuilder,
+  ChatInputCommandInteraction,
+  EmbedType,
+  GuildMember,
+  SlashCommandBuilder,
+  SlashCommandUserOption
+} from "discord.js"
 
-import { CommandEntry } from "./interactions"
-import { getHeatMapData, getWorkTime } from "./work_logging/calc"
-import { createEmbedImage } from "./work_logging/embed"
-import { calcEXPinLevel, calcLevel, calcLevelProgress, getEXP } from "./levels/api"
-import { ShowcasePostDB } from './reacts/db';
-import { HIGHLIGHT_THRESHOLD } from "./reacts/api"
-import { client } from "./client"
+import { client } from "../client"
+import { CommandEntry } from "../interactions"
+
+import { getHeatMapData, getWorkTime } from "../work_logging/calc"
+import { createEmbedImage } from "../work_logging/embed"
+
+import { getEXP } from "../levels/api"
+
+import { ShowcasePostDB } from '../reacts/db';
 
 
 export const WorkCardEmbed = async (memberOrId: string | GuildMember) => {

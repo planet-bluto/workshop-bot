@@ -48,7 +48,7 @@ export async function createEmbedImage(heatmapData: {startDay: number; data: num
   const LVL = calcLevel(EXP)
   const LVLprog = calcLevelProgress(EXP)
 
-  print("heatmapData: ", heatmapData)
+  // print("heatmapData: ", heatmapData)
   // print("WIDTH: ", WIDTH)
   // print("HEIGHT: ", HEIGHT)
   // print("CELL_SIZE: ", CELL_SIZE)
@@ -194,7 +194,7 @@ export async function createEmbedImage(heatmapData: {startDay: number; data: num
     PROGRESS_BAR_HEIGHT
   )
 
-  print("LVLprog: ", LVLprog)
+  // print("LVLprog: ", LVLprog)
 
   ctx.fillStyle = "#2765ff"
   ctx.fillRect(

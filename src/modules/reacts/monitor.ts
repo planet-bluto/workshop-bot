@@ -17,11 +17,11 @@ client.on(Events.ClientReady, async () => {
   let proms: Promise<Collection<Snowflake, Message> | Message>[] = []
   
   for (const channelId of MONITORING_CHANNELS) {
-    print("channelId: ", channelId)
+    // print("channelId: ", channelId)
 
     const channel = (await client.channels.fetch(channelId)) as TextChannel | ForumChannel
 
-    print("channel: ", channel)
+    // print("channel: ", channel)
 
     if ((channel as any)?.messages != undefined) {
       proms.push((channel as TextChannel).messages.fetch({ limit: 50 }))

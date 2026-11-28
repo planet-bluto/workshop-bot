@@ -3,7 +3,7 @@ import { Low } from "lowdb/lib"
 
 import { client } from "../client"
 
-import { ShowcasePostData, ShowcasePostDataEntry } from "./db"
+import { ShowcasePostData, ShowcasePostDataEntry, ShowcasePostDB } from "./db"
 import { colord } from "colord"
 
 
@@ -167,4 +167,13 @@ export async function unhighlightMessage(db: Low<ShowcasePostData>, msgId_or_idx
   }
 
   await db.write()
+}
+
+
+export async function getTotalReactCount(member_id: string) {
+  const post_db = await ShowcasePostDB()
+  const member_posts = post_db.data.filter(entry => entry.author_id == member_id)
+  const totalReactCount = member_posts.reduce((prev, curr) => prev + curr.reacts, 0)
+
+  return totalReactCount
 }

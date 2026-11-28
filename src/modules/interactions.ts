@@ -5,7 +5,8 @@ import forwardToWipsInteraction from "./forward_to_wips"
 import timeblockInteraction from "./timeblocks/setup_command"
 import draftAnnouncementInteraction from "./announcement_drafter"
 import { previewCommand, publishCommand } from "./announcement_drafter"
-import { WorkLogCommand } from "./stat_commands";
+import { WorkLogCommand } from "./commands/worklog";
+import { LeaderboardCommand } from "./commands/leaderboard";
 
 export type ValidBuilders = ContextMenuCommandBuilder | SlashCommandBuilder
 export type CommandEntry = [string, [ValidBuilders, (interaction: Interaction) => Promise<void>]]
@@ -15,6 +16,7 @@ const commands = new Map<string, [ValidBuilders, (interaction: Interaction) => P
   timeblockInteraction,
 	draftAnnouncementInteraction,
 	WorkLogCommand,
+	LeaderboardCommand,
 	previewCommand, publishCommand
 ]);
 
@@ -40,7 +42,7 @@ client.on(Events.InteractionCreate, (interaction) => {
 	if (interaction.guildId != process.env.GUILD_ID) { return }
 
 	if (interaction?.commandName == undefined) return;
-	print("interaction.commandName: ", interaction.commandName)
+	// print("interaction.commandName: ", interaction.commandName)
 
   const command = commands.get(interaction.commandName)
 

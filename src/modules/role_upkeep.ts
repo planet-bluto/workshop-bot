@@ -177,16 +177,16 @@ const generalUpkeep = async (type: "timeblock" | "levels") => {
   const guild = await client.guilds.fetch(process.env.GUILD_ID)
   const roles = await guild.roles.fetch()
 
-  print("roles => ", roles.map(role => ({
-    id: role.id,
-    name: role.name,
-    position: role.position,
-    rawPosition: role.rawPosition
-  })))
+  // print("roles => ", roles.map(role => ({
+  //   id: role.id,
+  //   name: role.name,
+  //   position: role.position,
+  //   rawPosition: role.rawPosition
+  // })))
 
 
   const databasedIds = Object.keys(db.data)
-  print("databasedIds: ", databasedIds)
+  // print("databasedIds: ", databasedIds)
   
 
   

@@ -199,7 +199,7 @@ async function listenForStream(userId: UserIdResolvable, timestamp: number) {
   })
 
 
-  print("Listening... ==> ", onlineListener, offlineListener)
+  // print("Listening... ==> ", onlineListener, offlineListener)
 
   LISTENERS[`${userId}_online_${timestamp}`] = {id: (userId as string), listener: onlineListener, timestamp, key: `${userId}_online_${timestamp}`}
   LISTENERS[`${userId}_offline_${timestamp}`] = {id: (userId as string), listener: offlineListener, timestamp, key: `${userId}_offline_${timestamp}`}

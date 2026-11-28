@@ -4,6 +4,7 @@ import { DateTime, Duration } from "luxon";
 import { modulo } from "../../lib/modulo";
 import rates from "../levels/rates";
 import { ShowcasePostDB } from "../reacts/db";
+import { TimeRange } from "../timerange";
 // import { CELL_COUNT } from "./embed";
 
 const HOUR = 3600000
@@ -17,6 +18,7 @@ export interface WorkTimeOutput {
   in_hours: number;
   clock: string;
   fancy: string;
+  sessions: WorkSession[]
   // usd: number;
   // usd_formatted: string;
 }
@@ -26,6 +28,8 @@ export async function getWorkTime(member_id: string, startTimestamp: number = 0.
   return getWorkTimeSync(db, member_id, startTimestamp, endTimestamp)
 }
 
+export type WorkSession = {range: TimeRange, duration: number, exp: number}
+
 export function getWorkTimeSync(db: Low<WorkLogData>, member_id: string, startTimestamp: number = 0.0, endTimestamp: number = Infinity): WorkTimeOutput {
   const worklog_db = db
 
@@ -33,14 +37,21 @@ export function getWorkTimeSync(db: Low<WorkLogData>, member_id: string, startTi
 
   const entries = (worklog_db.data[member_id] ?? []).sort((entryA, entryB) => entryA.timestamp - entryB.timestamp).filter(entry => entry.timestamp >= startTimestamp && entry.timestamp <= endTimestamp)
 
-  print("entries: ", entries)
+  // print("entries: ", entries)
 
   let totalTimeMS = 0.0
   // let totalUSD = 0.0
   // let currentWage = BASE_WAGE + (promotion_level * PROMOTION_RATE)
 
-  const addTime = (ms: number) => {
+  let sessions: WorkSession[] = []
+  const addTime = (startMs: number, endMs: number) => {
+    const ms = endMs - startMs
     totalTimeMS += ms
+    sessions.push({
+      range: [startMs, endMs],
+      duration: ms,
+      exp: ms * rates.COWORK_PER_MS,
+    })
     // totalUSD += (ms / HOUR) * currentWage
   }
 
@@ -49,14 +60,14 @@ export function getWorkTimeSync(db: Low<WorkLogData>, member_id: string, startTi
     if (entry.clock_in) {
       lastClockInTime = entry.timestamp
     } else if (lastClockInTime != null) {
-      addTime(entry.timestamp - lastClockInTime)
+      addTime(lastClockInTime, entry.timestamp)
       lastClockInTime = null
     }
   }
 
   // Count (supposed) current time in VC
   if (lastClockInTime != null) {
-    addTime(Date.now() - lastClockInTime)
+    addTime(lastClockInTime, Date.now())
   }
 
   const hours = Math.floor(totalTimeMS / HOUR)
@@ -69,6 +80,7 @@ export function getWorkTimeSync(db: Low<WorkLogData>, member_id: string, startTi
     in_hours: (totalTimeMS / HOUR),
     clock: `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(ms).padStart(3, '0')}`,
     fancy: `${String(hours)}h ${String(mins)}m ${String(secs)}s ${String(ms).padStart(3, '0')}ms`,
+    sessions
     // usd: totalUSD,
     // usd_formatted: `$${totalUSD.toFixed(2)}`
   }

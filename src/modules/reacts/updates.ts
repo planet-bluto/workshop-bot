@@ -46,7 +46,7 @@ export async function msgReactsUpdate(msg: Message | PartialMessage) {
   const thresholdMet = uniqueReactCount >= HIGHLIGHT_THRESHOLD
 
   const expValue = ((uniqueReactCount * rates.PER_REACT) * (db.data[idx].for_post_day ? 2 : 1))
-  setEXP(refetchedMsg.author.id, `${REACT_EXP_TYPE_PREFIX}${refetchedMsg.id}`, expValue)
+  setEXP(refetchedMsg.author.id, `${REACT_EXP_TYPE_PREFIX}${refetchedMsg.id}`, expValue, {timeRange: [msg.createdTimestamp, msg.createdTimestamp]})
 
   db.data[idx].reacts = uniqueReactCount
   if (uniqueReactCount > 0) { await db.write() }

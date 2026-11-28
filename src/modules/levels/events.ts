@@ -4,7 +4,7 @@ import { client } from "../client";
 import { getOrCreateRole, RoleMapDB } from "../role_upkeep";
 
 import { LevelEvents } from "./api";
-import { WorkCardEmbed } from "../stat_commands";
+import { WorkCardEmbed } from "../commands/worklog";
 
 LevelEvents.on("level_up", async (member_id: string, newLVL: number) => {
   const db = await RoleMapDB("levels")

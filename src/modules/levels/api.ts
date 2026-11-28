@@ -2,12 +2,13 @@ import { Low } from "lowdb/lib";
 
 import TaskManager from "../../lib/taskManager";
 
-import { getLatestEntrySync } from "../work_logging/calc";
+import { getLatestEntrySync, getWorkTimeSync } from '../work_logging/calc';
 import { WorkLogData, WorklogDB } from "../work_logging/db";
 
 import * as levelsDB from "./db";
 import rates from "./rates";
 import EventEmitter from "eventemitter3";
+import { ALL_TIME, CompleteTimeRange, rangeIntercept, TimeRange } from "../timerange";
 
 const taskManager = new TaskManager()
 
@@ -36,26 +37,38 @@ export function getLevelCacheFromMemberID(member_id: string) {
 export const COWORK_EXP_TYPE = "COWORKING"
 export const REACT_EXP_TYPE_PREFIX = "POST_"
 
-export function addEXP(member_id: string, type: string, exp: number, duringInit: boolean = false) {
-  taskManager.add(async () => {
-    const { idx } = getLevelCacheFromMemberID(member_id)
+// export function addEXP(member_id: string, type: string, exp: number, duringInit: boolean = false) {
+//   taskManager.add(async () => {
+//     const { idx } = getLevelCacheFromMemberID(member_id)
     
-    let prevEXP = await getEXP(member_id)
-    if (!duringInit) { prevEXP = await getEXP(member_id) }
+//     let prevEXP = await getEXP(member_id)
+//     if (!duringInit) { prevEXP = await getEXP(member_id) }
 
-    if (levelsDB.cache.data[idx].exp[type] == undefined) { levelsDB.cache.data[idx].exp[type] = 0 }
+//     if (levelsDB.cache.data[idx].exp[type] == undefined) { levelsDB.cache.data[idx].exp[type] = {value: 0, timeRange: [0, 0]} }
 
-    levelsDB.cache.data[idx].exp[type] += exp
+//     levelsDB.cache.data[idx].exp[type] += exp
 
-    let newEXP = 0.0
-    if (!duringInit) { newEXP = await getEXP(member_id) }
+//     let newEXP = 0.0
+//     if (!duringInit) { newEXP = await getEXP(member_id) }
 
-    if (!duringInit) { levelingCheck(member_id, prevEXP, newEXP) }
-  })
+//     if (!duringInit) { levelingCheck(member_id, prevEXP, newEXP) }
+//   })
+// }
+
+export type setEXPOptions = {
+  timeRange: TimeRange,
+  duringInit?: boolean
 }
-
-export function setEXP(member_id: string, type: string, exp: number, duringInit: boolean = false) {
+export const setEXPDefaults = () => ({
+  timeRange: ALL_TIME(),
+  duringInit: false
+})
+export function setEXP(member_id: string, type: string, exp: number, options: setEXPOptions)
+export function setEXP(member_id: string, type: string, exp: 0)
+export function setEXP(member_id: string, type: string, exp: number, options?: setEXPOptions) {
   taskManager.add(async () => {
+    const {duringInit, timeRange} = Object.assign(setEXPDefaults(), options)
+
     const { idx } = getLevelCacheFromMemberID(member_id)
 
     let prevEXP = await getEXP(member_id)
@@ -64,7 +77,7 @@ export function setEXP(member_id: string, type: string, exp: number, duringInit:
     if (exp == 0) {
       delete levelsDB.cache.data[idx].exp[type]
     } else {
-      levelsDB.cache.data[idx].exp[type] = exp
+      levelsDB.cache.data[idx].exp[type] = {exp, timeRange}
     }
 
     let newEXP = 0.0
@@ -86,26 +99,41 @@ export function updateClockedInStatus(member_id: string, clocked_in: boolean) {
   }
 }
 
-export function getEXPSync(worklog_db: Low<WorkLogData>, member_id: string, atTimestamp: number = Date.now()) {
+export type getEXPOptions = {
+  atTimestamp?: number,
+  range?: [number, number?]
+}
+const getEXPDefaults = () => ({
+  atTimestamp: Date.now(),
+  range: ALL_TIME()
+})
+export function getEXPSync(worklog_db: Low<WorkLogData>, member_id: string, options: getEXPOptions = {}) {
+  const {atTimestamp, range} = (Object.assign(getEXPDefaults(), options) as {atTimestamp: number, range: CompleteTimeRange})
+  
   const { idx } = getLevelCacheFromMemberID(member_id)
 
-  let totalEXP = Object.values(levelsDB.cache.data[idx].exp).reduce((prev, curr) => prev + curr, 0)
+  const EXP_ENTRIES = levelsDB.cache.data[idx].exp
+  let totalEXP = Object.values(EXP_ENTRIES)
+    .filter(entry => rangeIntercept(entry.timeRange, range).inRange)
+    .reduce((prev, curr) => prev + (curr.exp * rangeIntercept(curr.timeRange, range).innerDelta), 0)
 
   if (levelsDB.cache.data[idx].clocked_in) {
     const latestClockIn = getLatestEntrySync(worklog_db, member_id, true)
     if (latestClockIn == undefined) { return totalEXP }
+
+    const currentSessionIntercept = rangeIntercept([latestClockIn.timestamp, atTimestamp], range)
     const timeSinceMS = (atTimestamp - latestClockIn.timestamp)
 
-    totalEXP += (timeSinceMS * rates.COWORK_PER_MS)
+    totalEXP += ((timeSinceMS * rates.COWORK_PER_MS) * currentSessionIntercept.innerDelta)
   }
 
   return totalEXP
 }
 
-export async function getEXP(member_id: string, atTimestamp: number = Date.now()) {
+export async function getEXP(member_id: string, options: getEXPOptions = {}) {
   const db = await WorklogDB()
   
-  return getEXPSync(db, member_id, atTimestamp)
+  return getEXPSync(db, member_id, options)
 }
 
 export function calcLevel(exp: number) {
@@ -121,14 +149,14 @@ export function calcLevelProgress(exp: number) {
   return (exp / calcEXPinLevel(nextLevel))
 }
 
-export async function getLeaderboard() {
+export async function getLeaderboard(options: { range?: [number, number?] } = {}) {
   const db = await WorklogDB()
 
   return levelsDB.cache.data.map(entry => ({
     member_id: entry.member_id,
-    exp: getEXPSync(db, entry.member_id),
+    exp: getEXPSync(db, entry.member_id, options),
     clocked_in: entry.clocked_in
-  })).sort((entryA, entryB) => entryB.exp - entryA.exp)
+  })).sort((entryA, entryB) => entryB.exp - entryA.exp).map(entry => ({...entry}))
 }
 
 let firedLevelEvents: string[] = []

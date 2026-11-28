@@ -5,7 +5,7 @@ import { WorklogDB } from "../work_logging/db"
 import { client } from "../client";
 
 import * as levelsDB from "./db";
-import { addEXP, COWORK_EXP_TYPE, getEXP, levelingCheck, REACT_EXP_TYPE_PREFIX, setEXP, updateClockedInStatus } from "./api"
+import { COWORK_EXP_TYPE, getEXP, levelingCheck, REACT_EXP_TYPE_PREFIX, setEXP, updateClockedInStatus } from "./api"
 import rates from "./rates"
 import { ShowcasePostDB } from "../reacts/db";
 
@@ -23,7 +23,19 @@ async function level_upkeep() {
 
   for (const member_id of Object.keys(worklog_db.data)) {
     const workTime = getWorkTimeSync(worklog_db, member_id, 0.0, Infinity)
-    addEXP(member_id, COWORK_EXP_TYPE, workTime.in_hours * rates.COWORK_PER_HOUR, true)
+
+    for (const session of workTime.sessions) {
+      setEXP(
+        member_id,
+        `${COWORK_EXP_TYPE}_${session.range[0]}_${session.range[1]}`,
+        session.exp,
+        {
+          duringInit: true,
+          timeRange: session.range
+        }
+      )
+    }
+
     updateClockedInStatus(member_id, currently_coworking_members.includes(member_id))
   }
 
@@ -32,7 +44,7 @@ async function level_upkeep() {
       entry.author_id,
       `${REACT_EXP_TYPE_PREFIX}${entry.post_id}`,
       (entry.reacts * rates.PER_REACT) * (entry.for_post_day ? 2 : 1),
-      true
+      {duringInit: true, timeRange: [entry.post_timestamp, entry.post_timestamp]}
     )
   }
 
@@ -47,10 +59,10 @@ async function coworkingLevelingCheck() {
   for (const coworking_member_id of levelsDB.cache.coworking_members) {
     if (coworkingLevelingCheckTimestamp == null) { continue }
     
-    const prevEXP = await getEXP(coworking_member_id, coworkingLevelingCheckTimestamp)
+    const prevEXP = await getEXP(coworking_member_id, { atTimestamp: coworkingLevelingCheckTimestamp })
     const newEXP = await getEXP(coworking_member_id)
 
-    print("newEXP: ", newEXP)
+    // print("newEXP: ", newEXP)
     levelingCheck(coworking_member_id, prevEXP, newEXP)
   }
 
