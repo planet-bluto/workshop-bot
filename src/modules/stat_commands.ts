@@ -27,7 +27,7 @@ export const WorkCardEmbed = async (memberOrId: string | GuildMember) => {
 
   const post_db = await ShowcasePostDB()
   const member_posts = post_db.data.filter(entry => entry.author_id == targetMember.id)
-  const highlightPostCount = member_posts.filter(entry => entry.reacts >= HIGHLIGHT_THRESHOLD).length
+  const totalReactCount = member_posts.reduce((prev, curr) => prev + curr.reacts, 0)
 
   // await reply(`Total Hours Logged: \`\`${WorkTime.fancy} (${WorkTime.usd_formatted})\`\``, false)
 
@@ -50,8 +50,8 @@ export const WorkCardEmbed = async (memberOrId: string | GuildMember) => {
             },
             {
                 "inline": true,
-                "name": "Highlighted Posts",
-                "value": `\`\`${highlightPostCount}\`\``
+                "name": "Total Reacts Earned!",
+                "value": `\`\`${totalReactCount}\`\``
             },
             // {
             //     "inline": true,

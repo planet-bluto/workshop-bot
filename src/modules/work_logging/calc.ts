@@ -127,7 +127,7 @@ export async function getDayMap(member_id: string): Promise<{[superOrdinal: stri
   
   // if (entries.length == 0) { return {} }
 
-  if (entries[0].clock_in == false) {
+  if (entries.length > 0 && entries[0].clock_in == false) {
     
     const dayStartTimestamp = DateTime.fromMillis(entries[0].timestamp)
     .startOf('day')
@@ -197,8 +197,10 @@ export async function getDayMap(member_id: string): Promise<{[superOrdinal: stri
   }
 
   const dayMapKeys = Object.keys(dayMap)
-  for (let i = Number(dayMapKeys[0]); i < Number(dayMapKeys[dayMapKeys.length-1]); i++) {
-    if (dayMap[String(i)] == undefined) { dayMap[String(i)] = 0.0 }
+  if (dayMapKeys.length) {
+    for (let i = Number(dayMapKeys[0]); i < Number(dayMapKeys[dayMapKeys.length-1]); i++) {
+      if (dayMap[String(i)] == undefined) { dayMap[String(i)] = 0.0 }
+    }
   }
 
   const post_db = await ShowcasePostDB()
