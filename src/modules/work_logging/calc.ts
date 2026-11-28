@@ -204,7 +204,8 @@ export async function getDayMap(member_id: string): Promise<{[superOrdinal: stri
   const post_db = await ShowcasePostDB()
   const member_posts = post_db.data.filter(entry => entry.author_id == member_id)
   for (const entry of member_posts) {
-    const superOrdinal = calcSuperOrdinal(entry.post_timestamp)
+    const superOrdinal = calcSuperOrdinal(entry. post_timestamp)
+    if (dayMap[String(superOrdinal)] == undefined) { dayMap[String(superOrdinal)] = 0.0 }
     dayMap[String(superOrdinal)] += entry.reacts * rates.PER_REACT
   }
 
