@@ -125,7 +125,7 @@ export async function getDayMap(member_id: string): Promise<{[superOrdinal: stri
     .filter(entry => entry.timestamp >= startTimestamp && entry.timestamp <= endTimestamp)
     .filter(entry => entry.type == "time_punch")
   
-  if (entries.length == 0) { return {} }
+  // if (entries.length == 0) { return {} }
 
   if (entries[0].clock_in == false) {
     
